@@ -39,12 +39,12 @@ class CodeAnalysis(BaseModel):
     created_at: datetime
     updated_at: datetime
     
-    # Repository information
-    repository: str
-    commit_sha: str
-    commit_message: str
-    commit_author: str
-    file_path: str
+    # Repository information (optional for backward compatibility)
+    repository: Optional[str] = None
+    commit_sha: Optional[str] = None
+    commit_message: Optional[str] = None
+    commit_author: Optional[str] = None
+    file_path: Optional[str] = None
     
     # Analysis scores
     pylint_score: float
