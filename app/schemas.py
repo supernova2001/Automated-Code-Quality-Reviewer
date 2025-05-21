@@ -34,7 +34,7 @@ class AnalysisMetrics(BaseModel):
     test_coverage: Optional[float] = None
 
 class CodeAnalysis(BaseModel):
-    id: int
+    id: Optional[int] = None
     code: str
     created_at: datetime
     updated_at: datetime
