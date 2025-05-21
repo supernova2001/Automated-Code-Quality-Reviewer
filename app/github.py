@@ -45,7 +45,7 @@ class GitHubWebhook:
             logger.info(f"Processing push event for repository: {repo_name}, commit: {commit_sha}")
             
             # Get file contents from GitHub
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(follow_redirects=True) as client:
                 # Get list of files in the commit
                 files_response = await client.get(
                     f"https://api.github.com/repos/{repo_name}/commits/{commit_sha}",
@@ -61,11 +61,9 @@ class GitHubWebhook:
                     if file['filename'].endswith('.py'):
                         logger.info(f"Analyzing file: {file['filename']}")
                         try:
-                            # Get file contents
-                            file_response = await client.get(
-                                file['raw_url'],
-                                headers={"Accept": "application/vnd.github.v3.raw"}
-                            )
+                            # Get file contents using raw.githubusercontent.com
+                            raw_url = f"https://raw.githubusercontent.com/{repo_name}/{commit_sha}/{file['filename']}"
+                            file_response = await client.get(raw_url)
                             file_response.raise_for_status()
                             code = file_response.text
                             
