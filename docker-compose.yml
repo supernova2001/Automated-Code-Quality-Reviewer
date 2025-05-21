@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - USE_AWS_RDS=true
+      - AWS_REGION=${AWS_REGION}
+      - AWS_SECRET_NAME=code-reviewer-db-secret
+      - REDIS_URL=${REDIS_URL}
+      - DEBUG=False
+    depends_on:
+      - redis
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+
+  worker:
+    build: .
+    command: celery -A app.worker worker --loglevel=info
+    environment:
+      - USE_AWS_RDS=true
+      - AWS_REGION=${AWS_REGION}
+      - AWS_SECRET_NAME=code-reviewer-db-secret
+      - REDIS_URL=${REDIS_URL}
+      - DEBUG=False
+    depends_on:
+      - redis
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure 
