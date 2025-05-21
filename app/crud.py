@@ -6,19 +6,7 @@ def create_analysis(db: Session, analysis: schemas.CodeAnalysis) -> models.CodeA
     """
     Create a new code analysis record
     """
-    db_analysis = models.CodeAnalysis(
-        code=analysis.code,
-        created_at=analysis.created_at,
-        updated_at=analysis.updated_at,
-        pylint_score=analysis.pylint_score,
-        complexity_score=analysis.complexity_score,
-        maintainability_score=analysis.maintainability_score,
-        security_score=analysis.security_score,
-        overall_score=analysis.overall_score,
-        metrics=analysis.metrics.dict(),
-        flake8_issues=[issue.dict() for issue in analysis.flake8_issues],
-        bandit_issues=[issue.dict() for issue in analysis.bandit_issues]
-    )
+    db_analysis = models.CodeAnalysis(**analysis.dict())
     db.add(db_analysis)
     db.commit()
     db.refresh(db_analysis)
@@ -33,13 +21,16 @@ def get_analysis(db: Session, analysis_id: int) -> Optional[models.CodeAnalysis]
 def get_analyses(
     db: Session,
     skip: int = 0,
-    limit: int = 10
+    limit: int = 10,
+    repository: Optional[str] = None
 ) -> List[models.CodeAnalysis]:
     """
     Get a list of code analyses with pagination
     """
-    return db.query(models.CodeAnalysis)\
-        .order_by(models.CodeAnalysis.created_at.desc())\
+    query = db.query(models.CodeAnalysis)
+    if repository:
+        query = query.filter(models.CodeAnalysis.repository == repository)
+    return query.order_by(models.CodeAnalysis.created_at.desc())\
         .offset(skip)\
         .limit(limit)\
         .all() 

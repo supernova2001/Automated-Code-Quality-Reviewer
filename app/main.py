@@ -35,7 +35,7 @@ app.add_middleware(
 
 # Initialize code analyzer and GitHub webhook handler
 code_analyzer = CodeAnalyzer()
-github_webhook = GitHubWebhook(webhook_secret=os.getenv("GITHUB_WEBHOOK_SECRET", ""))
+github_webhook_handler = GitHubWebhook(webhook_secret=os.getenv("GITHUB_WEBHOOK_SECRET", ""))
 
 @app.get("/")
 async def root():
@@ -104,12 +104,13 @@ async def analyze_code(
 async def get_analyses(
     skip: int = 0,
     limit: int = 10,
+    repository: str = None,
     db: Session = Depends(get_db)
 ):
     """
     Get list of previous code analyses
     """
-    analyses = crud.get_analyses(db, skip=skip, limit=limit)
+    analyses = crud.get_analyses(db, skip=skip, limit=limit, repository=repository)
     return analyses
 
 @app.get("/analyses/{analysis_id}", response_model=schemas.CodeAnalysis)
@@ -126,11 +127,11 @@ async def get_analysis(
     return analysis
 
 @app.post("/webhook/github")
-async def github_webhook(
+async def handle_github_webhook(
     request: Request,
     db: Session = Depends(get_db)
 ):
     """
     Handle GitHub webhook events
     """
-    return await github_webhook.process_webhook(request, db) 
+    return await github_webhook_handler.process_webhook(request, db) 
