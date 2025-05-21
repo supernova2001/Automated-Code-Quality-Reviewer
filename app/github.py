@@ -72,7 +72,6 @@ class GitHubWebhook:
                             
                             # Create analysis record
                             db_analysis = schemas.CodeAnalysis(
-                                id=0,  # Will be set by database
                                 code=code,
                                 created_at=commit_date,
                                 updated_at=commit_date,
