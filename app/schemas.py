@@ -38,14 +38,25 @@ class CodeAnalysis(BaseModel):
     code: str
     created_at: datetime
     updated_at: datetime
+    
+    # Repository information
+    repository: str
+    commit_sha: str
+    commit_message: str
+    commit_author: str
+    file_path: str
+    
+    # Analysis scores
     pylint_score: float
     complexity_score: float
     maintainability_score: float
     security_score: float
     overall_score: float
+    
+    # Analysis details
     metrics: AnalysisMetrics
-    flake8_issues: List[Issue] = []
-    bandit_issues: List[Issue] = []
+    flake8_issues: List[dict]
+    bandit_issues: List[dict]
 
     class Config:
         from_attributes = True 
