@@ -174,7 +174,7 @@ const RepositoryAnalysis: React.FC = () => {
             borderRadius: 2
           }}
         >
-          {loading ? 'Analyzing...' : 'Analyze Repository'}
+          {loading ? 'Loading...' : 'Get Repository History'}
         </Button>
       </Paper>
 
