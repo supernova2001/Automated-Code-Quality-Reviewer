@@ -6,11 +6,16 @@ import os
 from dotenv import load_dotenv
 from datetime import datetime
 import httpx
+import logging
 
 from .database import get_db, engine
 from . import models, schemas, crud
 from .code_analyzer import CodeAnalyzer
 from .github import GitHubWebhook
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
@@ -35,7 +40,9 @@ app.add_middleware(
 
 # Initialize code analyzer and GitHub webhook handler
 code_analyzer = CodeAnalyzer()
-github_webhook_handler = GitHubWebhook(webhook_secret=os.getenv("GITHUB_WEBHOOK_SECRET", ""))
+webhook_secret = os.getenv("GITHUB_WEBHOOK_SECRET", "")
+logger.info(f"Loaded webhook secret length: {len(webhook_secret) if webhook_secret else 0}")
+github_webhook_handler = GitHubWebhook(webhook_secret=webhook_secret)
 
 @app.get("/")
 async def root():
@@ -134,4 +141,5 @@ async def handle_github_webhook(
     """
     Handle GitHub webhook events
     """
+    logger.info("Received GitHub webhook request")
     return await github_webhook_handler.process_webhook(request, db) 
