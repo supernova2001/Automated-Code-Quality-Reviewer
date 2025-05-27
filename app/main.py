@@ -18,6 +18,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Load environment variables
+#a small comment to push a change
 load_dotenv()
 
 # Create database tables
