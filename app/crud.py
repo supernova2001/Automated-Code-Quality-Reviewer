@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from datetime import datetime
 from . import models, schemas
 from typing import List, Optional
 
@@ -33,4 +34,11 @@ def get_analyses(
     return query.order_by(models.CodeAnalysis.created_at.desc())\
         .offset(skip)\
         .limit(limit)\
-        .all() 
+        .all()
+
+def get_analyses_by_date_range(db: Session, start_date: datetime, end_date: datetime):
+    """Get all analyses within a date range"""
+    return db.query(models.CodeAnalysis).filter(
+        models.CodeAnalysis.created_at >= start_date,
+        models.CodeAnalysis.created_at <= end_date
+    ).all() 

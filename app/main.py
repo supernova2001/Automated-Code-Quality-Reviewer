@@ -1,10 +1,10 @@
-from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi import FastAPI, HTTPException, Depends, Request, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 import os
 from dotenv import load_dotenv
-from datetime import datetime
+from datetime import datetime, timedelta
 import httpx
 import logging
 
@@ -144,4 +144,96 @@ async def handle_github_webhook(
     Handle GitHub webhook events
     """
     logger.info("Received GitHub webhook request")
-    return await github_webhook_handler.process_webhook(request, db) 
+    return await github_webhook_handler.process_webhook(request, db)
+
+@app.get("/analytics")
+async def get_analytics(
+    timeRange: str = Query("30d", description="Time range for analytics (7d, 30d, 90d, 1y)"),
+    db: Session = Depends(get_db)
+):
+    try:
+        # Calculate date range
+        end_date = datetime.utcnow()
+        if timeRange == "7d":
+            start_date = end_date - timedelta(days=7)
+        elif timeRange == "30d":
+            start_date = end_date - timedelta(days=30)
+        elif timeRange == "90d":
+            start_date = end_date - timedelta(days=90)
+        elif timeRange == "1y":
+            start_date = end_date - timedelta(days=365)
+        else:
+            raise HTTPException(status_code=400, detail="Invalid time range")
+
+        # Get analyses within date range
+        analyses = crud.get_analyses_by_date_range(db, start_date, end_date)
+        
+        # Calculate daily averages
+        daily_data = {}
+        for analysis in analyses:
+            date = analysis.created_at.date().isoformat()
+            if date not in daily_data:
+                daily_data[date] = {
+                    "overall_score": [],
+                    "maintainability_score": [],
+                    "security_score": [],
+                    "complexity_score": []
+                }
+            
+            daily_data[date]["overall_score"].append(analysis.overall_score)
+            daily_data[date]["maintainability_score"].append(analysis.maintainability_score)
+            daily_data[date]["security_score"].append(analysis.security_score)
+            daily_data[date]["complexity_score"].append(analysis.complexity_score)
+
+        # Calculate averages and format data
+        analytics_data = []
+        for date, scores in daily_data.items():
+            analytics_data.append({
+                "date": date,
+                "overall_score": sum(scores["overall_score"]) / len(scores["overall_score"]),
+                "maintainability_score": sum(scores["maintainability_score"]) / len(scores["maintainability_score"]),
+                "security_score": sum(scores["security_score"]) / len(scores["security_score"]),
+                "complexity_score": sum(scores["complexity_score"]) / len(scores["complexity_score"])
+            })
+
+        # Sort by date
+        analytics_data.sort(key=lambda x: x["date"])
+
+        # Calculate trends
+        if len(analytics_data) >= 2:
+            first = analytics_data[0]
+            last = analytics_data[-1]
+            trends = {
+                "overall": {
+                    "value": last["overall_score"],
+                    "trend": "up" if last["overall_score"] > first["overall_score"] else "down" if last["overall_score"] < first["overall_score"] else "stable"
+                },
+                "maintainability": {
+                    "value": last["maintainability_score"],
+                    "trend": "up" if last["maintainability_score"] > first["maintainability_score"] else "down" if last["maintainability_score"] < first["maintainability_score"] else "stable"
+                },
+                "security": {
+                    "value": last["security_score"],
+                    "trend": "up" if last["security_score"] > first["security_score"] else "down" if last["security_score"] < first["security_score"] else "stable"
+                },
+                "complexity": {
+                    "value": last["complexity_score"],
+                    "trend": "up" if last["complexity_score"] > first["complexity_score"] else "down" if last["complexity_score"] < first["complexity_score"] else "stable"
+                }
+            }
+        else:
+            trends = {
+                "overall": {"value": 0, "trend": "stable"},
+                "maintainability": {"value": 0, "trend": "stable"},
+                "security": {"value": 0, "trend": "stable"},
+                "complexity": {"value": 0, "trend": "stable"}
+            }
+
+        return {
+            "analytics": analytics_data,
+            "trends": trends
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting analytics: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e)) 
