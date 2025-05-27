@@ -17,17 +17,28 @@ class GitHubWebhook:
     def __init__(self, webhook_secret: str):
         self.webhook_secret = webhook_secret
         self.code_analyzer = CodeAnalyzer()
+        logger.info(f"Initialized GitHubWebhook with secret length: {len(webhook_secret) if webhook_secret else 0}")
 
     def verify_signature(self, request: Request, payload: bytes) -> bool:
         """Verify GitHub webhook signature"""
         try:
             signature = request.headers.get('X-Hub-Signature-256')
+            logger.info(f"Received signature: {signature}")
+            
             if not signature:
                 logger.error("No signature found in request headers")
                 return False
             
+            if not self.webhook_secret:
+                logger.error("No webhook secret configured")
+                return False
+            
             expected_signature = f"sha256={hmac.new(self.webhook_secret.encode(), payload, hashlib.sha256).hexdigest()}"
-            return hmac.compare_digest(signature, expected_signature)
+            logger.info(f"Expected signature: {expected_signature}")
+            
+            is_valid = hmac.compare_digest(signature, expected_signature)
+            logger.info(f"Signature verification result: {is_valid}")
+            return is_valid
         except Exception as e:
             logger.error(f"Error verifying signature: {str(e)}")
             return False
@@ -118,6 +129,7 @@ class GitHubWebhook:
             # Log webhook event
             event_type = request.headers.get('X-GitHub-Event')
             logger.info(f"Received webhook event: {event_type}")
+            logger.info(f"Request headers: {dict(request.headers)}")
             
             # Verify signature
             if not self.verify_signature(request, payload):
@@ -126,6 +138,7 @@ class GitHubWebhook:
             
             # Parse payload
             payload_data = json.loads(payload)
+            logger.info(f"Webhook payload: {json.dumps(payload_data, indent=2)}")
             
             # Handle different event types
             if event_type == 'push':
