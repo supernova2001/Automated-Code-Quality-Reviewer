@@ -81,6 +81,10 @@ class GitHubWebhook:
                             # Analyze the code
                             analysis_result = await self.code_analyzer.analyze(code)
                             
+                            # Convert issues to dictionaries
+                            flake8_issues = [issue.dict() if hasattr(issue, 'dict') else issue for issue in analysis_result['flake8_issues']]
+                            bandit_issues = [issue.dict() if hasattr(issue, 'dict') else issue for issue in analysis_result['bandit_issues']]
+                            
                             # Create analysis record
                             db_analysis = schemas.CodeAnalysis(
                                 code=code,
@@ -97,8 +101,8 @@ class GitHubWebhook:
                                 security_score=analysis_result['security_score'],
                                 overall_score=analysis_result['overall_score'],
                                 metrics=schemas.AnalysisMetrics(**analysis_result['metrics']),
-                                flake8_issues=analysis_result['flake8_issues'],
-                                bandit_issues=analysis_result['bandit_issues']
+                                flake8_issues=flake8_issues,
+                                bandit_issues=bandit_issues
                             )
                             
                             # Save to database
