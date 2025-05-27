@@ -12,7 +12,25 @@ import {
   Chip,
   CircularProgress,
   Alert,
+  Stack,
+  Paper,
+  IconButton,
+  Tooltip,
+  Skeleton,
 } from '@mui/material';
+import {
+  History as HistoryIcon,
+  Code as CodeIcon,
+  Security as SecurityIcon,
+  Speed as SpeedIcon,
+  Build as BuildIcon,
+  Info as InfoIcon,
+  Warning as WarningIcon,
+  Error as ErrorIcon,
+  GitHub as GitHubIcon,
+  Person as PersonIcon,
+  Schedule as ScheduleIcon,
+} from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import axios from 'axios';
 
@@ -28,6 +46,21 @@ interface Analysis {
   complexity_score: number;
   maintainability_score: number;
   security_score: number;
+  ai_score?: number;
+  ai_analysis?: {
+    code_smells: Array<{
+      type: string;
+      severity: string;
+      message: string;
+      line: number;
+    }>;
+    suggestions: Array<{
+      type: string;
+      severity: string;
+      message: string;
+      line: number;
+    }>;
+  };
   metrics: {
     code_size: number;
     function_count: number;
@@ -63,7 +96,6 @@ const AnalysisHistory: React.FC = () => {
       setError(null);
       try {
         const response = await axios.get('http://localhost:8000/analyses');
-        // Filter unique by file_path + commit_sha if available, else by id
         const unique = response.data.filter((analysis: Analysis, idx: number, self: Analysis[]) => {
           if (analysis.file_path && analysis.commit_sha) {
             return idx === self.findIndex(a => a.file_path === analysis.file_path && a.commit_sha === analysis.commit_sha);
@@ -86,140 +118,412 @@ const AnalysisHistory: React.FC = () => {
     return theme.palette.error.main;
   };
 
+  const getIssueIcon = (type: string) => {
+    switch (type.toLowerCase()) {
+      case 'error':
+        return <ErrorIcon color="error" />;
+      case 'warning':
+        return <WarningIcon color="warning" />;
+      default:
+        return <InfoIcon color="info" />;
+    }
+  };
+
+  const renderSkeleton = () => (
+    <Stack spacing={3}>
+      {[1, 2, 3].map((i) => (
+        <Card 
+          key={i}
+          elevation={0}
+          sx={{ 
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 2
+          }}
+        >
+          <CardContent>
+            <Stack spacing={2}>
+              <Skeleton variant="text" width="60%" height={32} />
+              <Skeleton variant="text" width="40%" />
+              <Divider />
+              <Grid container spacing={2}>
+                {[1, 2, 3, 4].map((j) => (
+                  <Grid item xs={12} sm={6} md={3} key={j}>
+                    <Skeleton variant="text" width="80%" />
+                    <Skeleton variant="text" width="60%" />
+                  </Grid>
+                ))}
+              </Grid>
+            </Stack>
+          </CardContent>
+        </Card>
+      ))}
+    </Stack>
+  );
+
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        Analysis History
-      </Typography>
-      {loading && <CircularProgress />}
-      {error && <Alert severity="error">{error}</Alert>}
-      <Grid container spacing={3}>
+    <Box>
+      <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
+        <HistoryIcon color="primary" sx={{ fontSize: 32 }} />
+        <Typography variant="h4" component="h1">
+          Analysis History
+        </Typography>
+      </Stack>
+
+      {loading && renderSkeleton()}
+      
+      {error && (
+        <Alert 
+          severity="error" 
+          sx={{ 
+            mb: 3,
+            borderRadius: 2
+          }}
+        >
+          {error}
+        </Alert>
+      )}
+
+      <Stack spacing={3}>
         {analyses.map((analysis) => (
-          <Grid item xs={12} key={`${analysis.file_path || analysis.id}-${analysis.commit_sha || ''}`}> 
-            <Card>
-              <CardContent>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="h6" gutterBottom>
-                    {analysis.repository ? `${analysis.repository} — ` : ''}{analysis.file_path || `Analysis #${analysis.id}`}
-                  </Typography>
-                  {analysis.commit_sha && (
-                    <Typography variant="body2" color="text.secondary">
-                      Commit: {analysis.commit_sha.substring(0, 7)}
+          <Card 
+            key={`${analysis.file_path || analysis.id}-${analysis.commit_sha || ''}`}
+            elevation={0}
+            sx={{ 
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 2
+            }}
+          >
+            <CardContent>
+              <Stack spacing={2}>
+                <Box>
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <CodeIcon color="primary" />
+                    <Typography variant="h6">
+                      {analysis.repository ? `${analysis.repository} — ` : ''}{analysis.file_path || `Analysis #${analysis.id}`}
                     </Typography>
-                  )}
-                  {analysis.commit_author && (
-                    <Typography variant="body2" color="text.secondary">
-                      Author: {analysis.commit_author}
-                    </Typography>
-                  )}
-                  <Typography variant="body2" color="text.secondary">
-                    {new Date(analysis.created_at).toLocaleString()}
-                  </Typography>
+                  </Stack>
+                  
+                  <Stack 
+                    direction={{ xs: 'column', sm: 'row' }} 
+                    spacing={2} 
+                    sx={{ mt: 1, color: 'text.secondary' }}
+                  >
+                    {analysis.commit_sha && (
+                      <Stack direction="row" alignItems="center" spacing={0.5}>
+                        <GitHubIcon fontSize="small" />
+                        <Typography variant="body2">
+                          {analysis.commit_sha.substring(0, 7)}
+                        </Typography>
+                      </Stack>
+                    )}
+                    {analysis.commit_author && (
+                      <Stack direction="row" alignItems="center" spacing={0.5}>
+                        <PersonIcon fontSize="small" />
+                        <Typography variant="body2">
+                          {analysis.commit_author}
+                        </Typography>
+                      </Stack>
+                    )}
+                    <Stack direction="row" alignItems="center" spacing={0.5}>
+                      <ScheduleIcon fontSize="small" />
+                      <Typography variant="body2">
+                        {new Date(analysis.created_at).toLocaleString()}
+                      </Typography>
+                    </Stack>
+                  </Stack>
                 </Box>
-                <Divider sx={{ my: 2 }} />
+
+                <Divider />
+
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6} md={3}>
-                    <Typography variant="subtitle2">Overall Score</Typography>
-                    <Typography variant="h4" sx={{ color: getScoreColor(analysis.overall_score) }}>
-                      {analysis.overall_score.toFixed(2)}%
-                    </Typography>
+                    <Paper 
+                      elevation={0}
+                      sx={{ 
+                        p: 2,
+                        textAlign: 'center',
+                        bgcolor: 'background.default',
+                        borderRadius: 2
+                      }}
+                    >
+                      <Typography variant="subtitle2" color="text.secondary">
+                        Overall Score
+                      </Typography>
+                      <Typography 
+                        variant="h4" 
+                        sx={{ 
+                          color: getScoreColor(analysis.overall_score),
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        {analysis.overall_score.toFixed(1)}%
+                      </Typography>
+                    </Paper>
                   </Grid>
                   <Grid item xs={12} sm={6} md={3}>
-                    <Typography variant="subtitle2">Pylint</Typography>
-                    <Typography variant="h4" sx={{ color: getScoreColor(analysis.pylint_score) }}>
-                      {analysis.pylint_score.toFixed(2)}%
-                    </Typography>
+                    <Paper 
+                      elevation={0}
+                      sx={{ 
+                        p: 2,
+                        textAlign: 'center',
+                        bgcolor: 'background.default',
+                        borderRadius: 2
+                      }}
+                    >
+                      <Typography variant="subtitle2" color="text.secondary">
+                        Pylint Score
+                      </Typography>
+                      <Typography 
+                        variant="h4" 
+                        sx={{ 
+                          color: getScoreColor(analysis.pylint_score),
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        {analysis.pylint_score.toFixed(1)}%
+                      </Typography>
+                    </Paper>
                   </Grid>
                   <Grid item xs={12} sm={6} md={3}>
-                    <Typography variant="subtitle2">Security</Typography>
-                    <Typography variant="h4" sx={{ color: getScoreColor(analysis.security_score) }}>
-                      {analysis.security_score.toFixed(2)}%
-                    </Typography>
+                    <Paper 
+                      elevation={0}
+                      sx={{ 
+                        p: 2,
+                        textAlign: 'center',
+                        bgcolor: 'background.default',
+                        borderRadius: 2
+                      }}
+                    >
+                      <Typography variant="subtitle2" color="text.secondary">
+                        Security Score
+                      </Typography>
+                      <Typography 
+                        variant="h4" 
+                        sx={{ 
+                          color: getScoreColor(analysis.security_score),
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        {analysis.security_score.toFixed(1)}%
+                      </Typography>
+                    </Paper>
                   </Grid>
                   <Grid item xs={12} sm={6} md={3}>
-                    <Typography variant="subtitle2">Complexity</Typography>
-                    <Typography variant="h4" sx={{ color: getScoreColor(analysis.complexity_score) }}>
-                      {analysis.complexity_score.toFixed(2)}%
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <Typography variant="subtitle2">Maintainability</Typography>
-                    <Typography variant="h4" sx={{ color: getScoreColor(analysis.maintainability_score) }}>
-                      {analysis.maintainability_score.toFixed(2)}%
-                    </Typography>
+                    <Paper 
+                      elevation={0}
+                      sx={{ 
+                        p: 2,
+                        textAlign: 'center',
+                        bgcolor: 'background.default',
+                        borderRadius: 2
+                      }}
+                    >
+                      <Typography variant="subtitle2" color="text.secondary">
+                        Complexity
+                      </Typography>
+                      <Typography 
+                        variant="h4" 
+                        sx={{ 
+                          color: getScoreColor(analysis.complexity_score),
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        {analysis.complexity_score.toFixed(1)}%
+                      </Typography>
+                    </Paper>
                   </Grid>
                 </Grid>
-                <Divider sx={{ my: 2 }} />
-                <Typography variant="subtitle1" gutterBottom>
-                  Code Metrics
-                </Typography>
-                <Grid container spacing={2}>
-                  <Grid item xs={6} sm={4} md={2}>
-                    <Typography variant="body2">Code Size</Typography>
-                    <Typography variant="body1">{analysis.metrics.code_size} lines</Typography>
+
+                <Divider />
+
+                <Box>
+                  <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+                    <BuildIcon color="primary" />
+                    <Typography variant="h6">Code Metrics</Typography>
+                  </Stack>
+                  <Grid container spacing={2}>
+                    <Grid item xs={6} sm={4} md={2}>
+                      <Paper 
+                        elevation={0}
+                        sx={{ 
+                          p: 2,
+                          textAlign: 'center',
+                          bgcolor: 'background.default',
+                          borderRadius: 2
+                        }}
+                      >
+                        <Typography variant="subtitle2" color="text.secondary">
+                          Code Size
+                        </Typography>
+                        <Typography variant="h6">
+                          {analysis.metrics.code_size}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          lines
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                    <Grid item xs={6} sm={4} md={2}>
+                      <Paper 
+                        elevation={0}
+                        sx={{ 
+                          p: 2,
+                          textAlign: 'center',
+                          bgcolor: 'background.default',
+                          borderRadius: 2
+                        }}
+                      >
+                        <Typography variant="subtitle2" color="text.secondary">
+                          Functions
+                        </Typography>
+                        <Typography variant="h6">
+                          {analysis.metrics.function_count}
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                    <Grid item xs={6} sm={4} md={2}>
+                      <Paper 
+                        elevation={0}
+                        sx={{ 
+                          p: 2,
+                          textAlign: 'center',
+                          bgcolor: 'background.default',
+                          borderRadius: 2
+                        }}
+                      >
+                        <Typography variant="subtitle2" color="text.secondary">
+                          Classes
+                        </Typography>
+                        <Typography variant="h6">
+                          {analysis.metrics.class_count}
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                    <Grid item xs={6} sm={4} md={2}>
+                      <Paper 
+                        elevation={0}
+                        sx={{ 
+                          p: 2,
+                          textAlign: 'center',
+                          bgcolor: 'background.default',
+                          borderRadius: 2
+                        }}
+                      >
+                        <Typography variant="subtitle2" color="text.secondary">
+                          Comment Ratio
+                        </Typography>
+                        <Typography variant="h6">
+                          {analysis.metrics.comment_ratio.toFixed(1)}%
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                    <Grid item xs={6} sm={4} md={2}>
+                      <Paper 
+                        elevation={0}
+                        sx={{ 
+                          p: 2,
+                          textAlign: 'center',
+                          bgcolor: 'background.default',
+                          borderRadius: 2
+                        }}
+                      >
+                        <Typography variant="subtitle2" color="text.secondary">
+                          Test Coverage
+                        </Typography>
+                        <Typography variant="h6">
+                          {analysis.metrics.test_coverage ? `${analysis.metrics.test_coverage.toFixed(1)}%` : 'N/A'}
+                        </Typography>
+                      </Paper>
+                    </Grid>
                   </Grid>
-                  <Grid item xs={6} sm={4} md={2}>
-                    <Typography variant="body2">Functions</Typography>
-                    <Typography variant="body1">{analysis.metrics.function_count}</Typography>
-                  </Grid>
-                  <Grid item xs={6} sm={4} md={2}>
-                    <Typography variant="body2">Classes</Typography>
-                    <Typography variant="body1">{analysis.metrics.class_count}</Typography>
-                  </Grid>
-                  <Grid item xs={6} sm={4} md={2}>
-                    <Typography variant="body2">Comment Ratio</Typography>
-                    <Typography variant="body1">{analysis.metrics.comment_ratio.toFixed(1)}%</Typography>
-                  </Grid>
-                  <Grid item xs={6} sm={4} md={2}>
-                    <Typography variant="body2">Test Coverage</Typography>
-                    <Typography variant="body1">
-                      {analysis.metrics.test_coverage ? `${analysis.metrics.test_coverage.toFixed(1)}%` : 'N/A'}
-                    </Typography>
-                  </Grid>
-                </Grid>
-                {(analysis.flake8_issues.length > 0 || analysis.bandit_issues.length > 0) && (
+                </Box>
+
+                {analysis.ai_analysis && (
                   <>
-                    <Divider sx={{ my: 2 }} />
-                    <Typography variant="subtitle1" gutterBottom>
-                      Issues
-                    </Typography>
-                    <List>
-                      {analysis.flake8_issues.map((issue, index) => (
-                        <ListItem key={`flake8-${index}`}>
-                          <ListItemText
-                            primary={
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <Chip label="Flake8" size="small" color="warning" />
-                                <Typography variant="body2">
-                                  Line {issue.line}: {issue.message}
-                                </Typography>
-                              </Box>
-                            }
-                          />
-                        </ListItem>
-                      ))}
-                      {analysis.bandit_issues.map((issue, index) => (
-                        <ListItem key={`bandit-${index}`}>
-                          <ListItemText
-                            primary={
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <Chip label="Bandit" size="small" color="error" />
-                                <Typography variant="body2">
-                                  Line {issue.line}: {issue.message}
-                                </Typography>
-                              </Box>
-                            }
-                          />
-                        </ListItem>
-                      ))}
-                    </List>
+                    <Divider />
+                    <Box>
+                      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+                        <SecurityIcon color="primary" />
+                        <Typography variant="h6">AI Analysis</Typography>
+                      </Stack>
+                      
+                      {analysis.ai_analysis.code_smells.length > 0 && (
+                        <Box sx={{ mb: 2 }}>
+                          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+                            Code Smells
+                          </Typography>
+                          <Stack spacing={1}>
+                            {analysis.ai_analysis.code_smells.map((smell, index) => (
+                              <Paper
+                                key={index}
+                                elevation={0}
+                                sx={{
+                                  p: 1.5,
+                                  bgcolor: 'background.default',
+                                  borderRadius: 1,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 1
+                                }}
+                              >
+                                {getIssueIcon(smell.severity)}
+                                <Box sx={{ flex: 1 }}>
+                                  <Typography variant="body2">
+                                    Line {smell.line}: {smell.message}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    Type: {smell.type}
+                                  </Typography>
+                                </Box>
+                              </Paper>
+                            ))}
+                          </Stack>
+                        </Box>
+                      )}
+
+                      {analysis.ai_analysis.suggestions.length > 0 && (
+                        <Box>
+                          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+                            Suggestions
+                          </Typography>
+                          <Stack spacing={1}>
+                            {analysis.ai_analysis.suggestions.map((suggestion, index) => (
+                              <Paper
+                                key={index}
+                                elevation={0}
+                                sx={{
+                                  p: 1.5,
+                                  bgcolor: 'background.default',
+                                  borderRadius: 1,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 1
+                                }}
+                              >
+                                {getIssueIcon(suggestion.severity)}
+                                <Box sx={{ flex: 1 }}>
+                                  <Typography variant="body2">
+                                    Line {suggestion.line}: {suggestion.message}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    Type: {suggestion.type}
+                                  </Typography>
+                                </Box>
+                              </Paper>
+                            ))}
+                          </Stack>
+                        </Box>
+                      )}
+                    </Box>
                   </>
                 )}
-              </CardContent>
-            </Card>
-          </Grid>
+              </Stack>
+            </CardContent>
+          </Card>
         ))}
-      </Grid>
+      </Stack>
     </Box>
   );
 };
