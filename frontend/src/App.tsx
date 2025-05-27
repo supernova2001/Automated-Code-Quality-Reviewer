@@ -82,7 +82,7 @@ const App: React.FC = () => {
   const menuItems = [
     { text: 'Code Analyzer', icon: <CodeIcon />, view: 'analyzer' },
     { text: 'Analysis History', icon: <HistoryIcon />, view: 'history' },
-    { text: 'Repository Analysis', icon: <GitHubIcon />, view: 'repository' },
+    { text: 'Repository History', icon: <GitHubIcon />, view: 'repository' },
   ];
 
   const drawer = (
