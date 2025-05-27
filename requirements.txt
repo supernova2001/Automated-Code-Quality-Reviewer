@@ -1,3 +1,5 @@
+setuptools>=69.0.3
+wheel>=0.42.0
 fastapi==0.104.1
 uvicorn==0.24.0
 celery==5.3.4
@@ -14,4 +16,5 @@ bcrypt==4.0.1
 python-dotenv==1.0.0
 aiofiles==23.2.1
 psycopg2-binary==2.9.9
-boto3==1.28.64 
+boto3==1.28.64
+esprima==4.0.1 
