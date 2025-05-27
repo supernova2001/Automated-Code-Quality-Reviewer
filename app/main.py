@@ -82,6 +82,7 @@ async def analyze_code(
     """
     try:
         # Analyze the code
+        #adding a small comment to push a change
         analysis_result = await code_analyzer.analyze(code.code)
         
         # Create a CodeAnalysis object
