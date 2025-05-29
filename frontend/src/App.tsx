@@ -27,6 +27,11 @@ import {
 import CodeAnalyzer from './components/CodeAnalyzer';
 import AnalysisHistory from './components/AnalysisHistory';
 import RepositoryAnalysis from './components/RepositoryAnalysis';
+import HomePage from './components/HomePage';
+import AnalysisPage from './components/AnalysisPage';
+import HomeIcon from '@mui/icons-material/Home';
+import BarChartIcon from '@mui/icons-material/BarChart';
+import VisualizationsPage from './components/VisualizationsPage';
 
 const theme = createTheme({
   palette: {
@@ -80,6 +85,9 @@ const App: React.FC = () => {
   };
 
   const menuItems = [
+    { text: 'Home', icon: <HomeIcon />, view: 'home' },
+    { text: 'Code Analysis', icon: <CodeIcon />, view: 'analysis' },
+    { text: 'Visualizations', icon: <BarChartIcon />, view: 'visualizations' },
     { text: 'Code Analyzer', icon: <CodeIcon />, view: 'analyzer' },
     { text: 'Analysis History', icon: <HistoryIcon />, view: 'history' },
     { text: 'Repository History', icon: <GitHubIcon />, view: 'repository' },
@@ -98,7 +106,7 @@ const App: React.FC = () => {
             button 
             key={item.text}
             onClick={() => {
-              setCurrentView(item.view);
+              setCurrentView(item.view || "");
               if (isMobile) setMobileOpen(false);
             }}
             selected={currentView === item.view}
@@ -115,6 +123,12 @@ const App: React.FC = () => {
 
   const renderContent = () => {
     switch (currentView) {
+      case 'home':
+        return <HomePage />;
+      case 'analysis':
+        return <AnalysisPage />;
+      case 'visualizations':
+        return <VisualizationsPage />;
       case 'analyzer':
         return <CodeAnalyzer />;
       case 'history':
