@@ -48,7 +48,14 @@ const theme = createTheme({
     },
   },
   typography: {
-    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+    fontFamily: [
+      'Inter',
+      'Segoe UI',
+      'Roboto',
+      'Helvetica Neue',
+      'Arial',
+      'sans-serif',
+    ].join(','),
     h1: {
       fontWeight: 600,
     },
@@ -77,7 +84,7 @@ const drawerWidth = 240;
 
 const App: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [currentView, setCurrentView] = useState('analyzer');
+  const [currentView, setCurrentView] = useState('home');
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const handleDrawerToggle = () => {
@@ -86,7 +93,6 @@ const App: React.FC = () => {
 
   const menuItems = [
     { text: 'Home', icon: <HomeIcon />, view: 'home' },
-    { text: 'Code Analysis', icon: <CodeIcon />, view: 'analysis' },
     { text: 'Visualizations', icon: <BarChartIcon />, view: 'visualizations' },
     { text: 'Code Analyzer', icon: <CodeIcon />, view: 'analyzer' },
     { text: 'Analysis History', icon: <HistoryIcon />, view: 'history' },
@@ -166,7 +172,7 @@ const App: React.FC = () => {
               <MenuIcon />
             </IconButton>
             <Typography variant="h6" noWrap component="div" sx={{ display: { xs: 'none', sm: 'block' } }}>
-              Automated Code Quality Reviewer
+              Python Code Quality Reviewer
             </Typography>
           </Toolbar>
         </AppBar>

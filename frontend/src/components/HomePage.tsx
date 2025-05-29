@@ -19,7 +19,7 @@ const features = [
   {
     icon: <SecurityIcon fontSize="large" />, 
     title: 'Security Insights',
-    description: 'Detect vulnerabilities and security flaws before they reach production.'
+    description: 'Detect vulnerabilities and security flaws before they reach production. We use the latest packages to ensure your code is secure.'
   },
   {
     icon: <TrendingUpIcon fontSize="large" />, 
@@ -46,7 +46,7 @@ const HomePage: React.FC = () => {
       <Typography
         variant="h2"
         align="center"
-        sx={{ fontWeight: 700, mb: 2, color: 'primary.main', letterSpacing: 1 }}
+        sx={{ fontWeight: 500, mb: 2, color: 'primary.main', letterSpacing: 1 }}
       >
         Python Code Quality Reviewer
       </Typography>
