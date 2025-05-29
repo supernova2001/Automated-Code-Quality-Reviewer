@@ -2,10 +2,12 @@ import tempfile
 import os
 import subprocess
 import json
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Any
 import ast
 import re
 from .schemas import Issue, AnalysisMetrics
+from .cache import cache, cached
+import hashlib
 
 class CodeAnalyzer:
     def __init__(self):
@@ -14,11 +16,24 @@ class CodeAnalyzer:
             'flake8': self._run_flake8,
             'bandit': self._run_bandit
         }
+        self.cache_ttl = 3600  # Cache results for 1 hour
 
-    async def analyze(self, code: str) -> Dict:
+    def _generate_cache_key(self, code: str) -> str:
+        """Generate a unique cache key for the code"""
+        return hashlib.md5(code.encode()).hexdigest()
+
+    @cached(ttl_seconds=3600)
+    async def analyze(self, code: str) -> Dict[str, Any]:
         """
-        Analyze the given code using multiple tools and return combined results
+        Analyze code and return results. Results are cached for 1 hour.
         """
+        cache_key = self._generate_cache_key(code)
+        
+        # Check cache first
+        cached_result = cache.get(cache_key)
+        if cached_result is not None:
+            return cached_result
+
         # Create temporary file for analysis
         with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as temp_file:
             temp_file.write(code)
@@ -37,7 +52,7 @@ class CodeAnalyzer:
             scores = self._calculate_scores(metrics)
 
             # Structure the response
-            return {
+            result = {
                 'pylint_score': results['pylint']['score'],
                 'complexity_score': scores['complexity_score'],
                 'maintainability_score': scores['maintainability_score'],
@@ -54,6 +69,11 @@ class CodeAnalyzer:
                 'flake8_issues': results['flake8']['issues'],
                 'bandit_issues': results['bandit']['issues']
             }
+
+            # Cache the result
+            cache.set(cache_key, result, self.cache_ttl)
+            
+            return result
 
         finally:
             # Clean up temporary file

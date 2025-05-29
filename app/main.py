@@ -12,6 +12,7 @@ from .database import get_db, engine
 from . import models, schemas, crud
 from .code_analyzer import CodeAnalyzer
 from .github import GitHubWebhook
+from .cache import cache
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -152,6 +153,14 @@ async def get_analytics(
     db: Session = Depends(get_db)
 ):
     try:
+        # Generate cache key based on timeRange
+        cache_key = f"analytics_{timeRange}"
+        
+        # Check cache first
+        cached_result = cache.get(cache_key)
+        if cached_result is not None:
+            return cached_result
+
         # Calculate date range
         end_date = datetime.utcnow()
         if timeRange == "7d":
@@ -229,11 +238,42 @@ async def get_analytics(
                 "complexity": {"value": 0, "trend": "stable"}
             }
 
-        return {
+        result = {
             "analytics": analytics_data,
             "trends": trends
         }
 
+        # Cache the result for 5 minutes
+        cache.set(cache_key, result, 300)
+
+        return result
+
     except Exception as e:
         logger.error(f"Error getting analytics: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/admin/cache/clear")
+async def clear_cache():
+    """
+    Clear the in-memory cache
+    """
+    try:
+        cache.clear()
+        return {"message": "Cache cleared successfully"}
+    except Exception as e:
+        logger.error(f"Error clearing cache: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/admin/cache/stats")
+async def get_cache_stats():
+    """
+    Get cache statistics including hits, misses, and evictions
+    """
+    try:
+        stats = cache.get_stats()
+        stats['current_size'] = cache.get_size()
+        stats['max_size'] = cache.maxsize
+        return stats
+    except Exception as e:
+        logger.error(f"Error getting cache stats: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e)) 
