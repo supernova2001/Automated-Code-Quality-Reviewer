@@ -10,20 +10,25 @@ import {
   Box,
 } from '@mui/material';
 import {
+  Home as HomeIcon,
   Dashboard as DashboardIcon,
   Code as CodeIcon,
   Assessment as AssessmentIcon,
   Settings as SettingsIcon,
   Help as HelpIcon,
+  BarChart as BarChartIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const drawerWidth = 240;
 
 const menuItems = [
-  { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
-  { text: 'Code Analysis', icon: <CodeIcon />, path: '/analysis' },
-  { text: 'Reports', icon: <AssessmentIcon />, path: '/reports' },
+  { text: 'Home', icon: <HomeIcon />, path: '/' },
+  { text: 'Code Analyzer', icon: <CodeIcon />, path: '/analysis' },
+  { text: 'Analysis History', icon: <DashboardIcon />, path: '/history' },
+  { text: 'Repository History', icon: <AssessmentIcon />, path: '/repository' },
+  { text: 'Quality Analytics', icon: <BarChartIcon />, path: '/analytics' },
+  { text: 'Visualizations', icon: <BarChartIcon />, path: '/visualizations' },
   { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
   { text: 'Help', icon: <HelpIcon />, path: '/help' },
 ];
