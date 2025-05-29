@@ -71,7 +71,7 @@ const VisualizationsPage: React.FC = () => {
       ) : (
         <Grid container spacing={4}>
           <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 2, background: 'linear-gradient(135deg, #f8fafc 60%, #e0e7ff 100%)' }}>
+            <Paper sx={{ p: 2, background: 'linear-gradient(135deg, white 60%, white 100%)' }}>
               <Typography variant="h6" sx={{ mb: 2 }}>Code Quality Trend</Typography>
               <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={lineData}>
@@ -103,7 +103,7 @@ const VisualizationsPage: React.FC = () => {
             </Paper>
           </Grid>
           <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 2, background: 'linear-gradient(135deg, #f8fafc 60%, #d1fae5 100%)' }}>
+            <Paper sx={{ p: 2, background: 'linear-gradient(135deg, white 60%, #d1fae5 100%)' }}>
               <Typography variant="h6" sx={{ mb: 2 }}>Latest Score Distribution</Typography>
               <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
@@ -128,7 +128,7 @@ const VisualizationsPage: React.FC = () => {
             </Paper>
           </Grid>
           <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 2, background: 'linear-gradient(135deg, #f8fafc 60%, #fef9c3 100%)' }}>
+            <Paper sx={{ p: 2, background: 'linear-gradient(135deg, white 60%,white 100%)' }}>
               <Typography variant="h6" sx={{ mb: 2 }}>Metric Comparison (Radar)</Typography>
               <ResponsiveContainer width="100%" height={250}>
                 <RadarChart cx="50%" cy="50%" outerRadius={80} data={radarData}>
