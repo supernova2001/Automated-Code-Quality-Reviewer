@@ -17,4 +17,8 @@ python-dotenv==1.0.0
 aiofiles==23.2.1
 psycopg2-binary==2.9.9
 boto3==1.28.64
-esprima==4.0.1 
+esprima==4.0.1
+httpx==0.25.1
+radon==6.0.1
+scikit-learn==1.3.2
+joblib==1.3.2 

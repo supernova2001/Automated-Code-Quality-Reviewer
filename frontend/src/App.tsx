@@ -15,16 +15,24 @@ import {
   ListItemText,
   useMediaQuery,
   Paper,
-  Fade
+  Fade,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Button
 } from '@mui/material';
 import {
   Menu as MenuIcon,
   Code as CodeIcon,
   History as HistoryIcon,
   GitHub as GitHubIcon,
-  Assessment as AssessmentIcon
+  Assessment as AssessmentIcon,
+  Person as PersonIcon
 } from '@mui/icons-material';
 import CodeAnalyzer from './components/CodeAnalyzer';
+import UserCodeAnalyzer from './components/UserCodeAnalyzer';
 import AnalysisHistory from './components/AnalysisHistory';
 import RepositoryAnalysis from './components/RepositoryAnalysis';
 import HomePage from './components/HomePage';
@@ -32,6 +40,7 @@ import AnalysisPage from './components/AnalysisPage';
 import HomeIcon from '@mui/icons-material/Home';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import VisualizationsPage from './components/VisualizationsPage';
+import axios from 'axios';
 
 const theme = createTheme({
   palette: {
@@ -84,83 +93,117 @@ const drawerWidth = 240;
 
 const App: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [currentView, setCurrentView] = useState('home');
+  const [currentPage, setCurrentPage] = useState('home');
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [adminDialogOpen, setAdminDialogOpen] = useState(false);
+  const [securityAnswer, setSecurityAnswer] = useState('');
+  const [adminCode, setAdminCode] = useState('');
+  const [showCode, setShowCode] = useState(false);
+  const [receivedCode, setReceivedCode] = useState('');
+  const [adminUnlocked, setAdminUnlocked] = useState(() => sessionStorage.getItem('isAdmin') === 'true');
+  const [codeInput, setCodeInput] = useState('');
+  const [codeError, setCodeError] = useState('');
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
 
+  const handleAdminViewClick = () => {
+    setAdminDialogOpen(true);
+    setSecurityAnswer('');
+    setShowCode(false);
+    setReceivedCode('');
+    setCodeInput('');
+    setCodeError('');
+  };
+
+  const handleSecuritySubmit = async () => {
+    try {
+      const res = await axios.post(`http://localhost:8000/api/admin/auth`, { answer: securityAnswer });
+      setReceivedCode(res.data.code);
+      setShowCode(true);
+    } catch (err) {
+      setCodeError('Incorrect answer.');
+    }
+  };
+
+  const handleCodeSubmit = async () => {
+    try {
+      const res = await axios.post('http://localhost:8000/api/admin/verify', { code: codeInput });
+      if (res.data.admin) {
+        setAdminUnlocked(true);
+        sessionStorage.setItem('isAdmin', 'true');
+        setAdminDialogOpen(false);
+      } else {
+        setCodeError('Invalid code.');
+      }
+    } catch {
+      setCodeError('Invalid code.');
+    }
+  };
+
+  const handleAdminLogout = () => {
+    setAdminUnlocked(false);
+    sessionStorage.removeItem('isAdmin');
+  };
+
   const menuItems = [
-    { text: 'Home', icon: <HomeIcon />, view: 'home' },
-    { text: 'Visualizations', icon: <BarChartIcon />, view: 'visualizations' },
-    { text: 'Code Analyzer', icon: <CodeIcon />, view: 'analyzer' },
-    { text: 'Analysis History', icon: <HistoryIcon />, view: 'history' },
-    { text: 'Repository History', icon: <GitHubIcon />, view: 'repository' },
+    { text: 'Home', icon: <HomeIcon />, page: 'home' },
+    { text: 'Code Analysis (Admin)', icon: <CodeIcon />, page: 'analyzer', adminOnly: true },
+    { text: 'Code Analysis (User)', icon: <PersonIcon />, page: 'user-analyzer' },
+    { text: 'Analysis History', icon: <HistoryIcon />, page: 'history' },
+    { text: 'Repository Analysis', icon: <GitHubIcon />, page: 'repository' },
+    { text: 'Visualizations', icon: <BarChartIcon />, page: 'visualizations' },
   ];
 
   const drawer = (
-    <Box sx={{ overflow: 'auto' }}>
-      <Toolbar>
-        <Typography variant="h6" noWrap component="div" sx={{ color: 'primary.main' }}>
-          Code Quality
-        </Typography>
-      </Toolbar>
+    <div>
+      <Toolbar />
       <List>
-        {menuItems.map((item) => (
+        {menuItems.filter(item => !item.adminOnly || adminUnlocked).map((item) => (
           <ListItem 
             button 
             key={item.text}
             onClick={() => {
-              setCurrentView(item.view || "");
-              if (isMobile) setMobileOpen(false);
+              setCurrentPage(item.page);
+              if (isMobile) {
+                setMobileOpen(false);
+              }
             }}
-            selected={currentView === item.view}
+            selected={currentPage === item.page}
           >
-            <ListItemIcon sx={{ color: currentView === item.view ? 'primary.main' : 'inherit' }}>
-              {item.icon}
-            </ListItemIcon>
+            <ListItemIcon>{item.icon}</ListItemIcon>
             <ListItemText primary={item.text} />
           </ListItem>
         ))}
       </List>
-    </Box>
+    </div>
   );
 
-  const renderContent = () => {
-    switch (currentView) {
+  const renderPage = () => {
+    switch (currentPage) {
       case 'home':
         return <HomePage />;
-      case 'analysis':
-        return <AnalysisPage />;
-      case 'visualizations':
-        return <VisualizationsPage />;
       case 'analyzer':
         return <CodeAnalyzer />;
+      case 'user-analyzer':
+        return <UserCodeAnalyzer />;
       case 'history':
         return <AnalysisHistory />;
       case 'repository':
         return <RepositoryAnalysis />;
+      case 'visualizations':
+        return <VisualizationsPage />;
       default:
-        return <CodeAnalyzer />;
+        return <HomePage />;
     }
   };
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
-        <AppBar 
-          position="fixed" 
-          sx={{ 
-            zIndex: (theme) => theme.zIndex.drawer + 1,
-            bgcolor: 'background.paper',
-            color: 'text.primary',
-            boxShadow: 'none',
-            borderBottom: '1px solid',
-            borderColor: 'divider'
-          }}
-        >
+      <Box sx={{ display: 'flex' }}>
+        <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
           <Toolbar>
             <IconButton
               color="inherit"
@@ -171,12 +214,18 @@ const App: React.FC = () => {
             >
               <MenuIcon />
             </IconButton>
-            <Typography variant="h6" noWrap component="div" sx={{ display: { xs: 'none', sm: 'block' } }}>
-              Python Code Quality Reviewer
+            <Typography variant="h6" noWrap component="div">
+              Code Quality Reviewer
             </Typography>
+            <Box sx={{ flexGrow: 1 }} />
+            {adminUnlocked && (
+              <Button color="inherit" onClick={handleAdminLogout}>Logout Admin</Button>
+            )}
+            {!adminUnlocked && (
+              <Button color="inherit" onClick={handleAdminViewClick}>Admin View</Button>
+            )}
           </Toolbar>
         </AppBar>
-
         <Box
           component="nav"
           sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
@@ -186,7 +235,7 @@ const App: React.FC = () => {
             open={mobileOpen}
             onClose={handleDrawerToggle}
             ModalProps={{
-              keepMounted: true,
+              keepMounted: true, // Better open performance on mobile.
             }}
             sx={{
               display: { xs: 'block', sm: 'none' },
@@ -199,20 +248,13 @@ const App: React.FC = () => {
             variant="permanent"
             sx={{
               display: { xs: 'none', sm: 'block' },
-              '& .MuiDrawer-paper': { 
-                boxSizing: 'border-box', 
-                width: drawerWidth,
-                borderRight: '1px solid',
-                borderColor: 'divider',
-                bgcolor: 'background.paper'
-              },
+              '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
             }}
             open
           >
             {drawer}
           </Drawer>
         </Box>
-
         <Box
           component="main"
           sx={{
@@ -222,20 +264,51 @@ const App: React.FC = () => {
             mt: '64px'
           }}
         >
-          <Fade in={true} timeout={500}>
-            <Paper 
-              elevation={0} 
-              sx={{ 
-                p: 3,
-                minHeight: 'calc(100vh - 100px)',
-                bgcolor: 'background.paper'
-              }}
-            >
-              {renderContent()}
-            </Paper>
-          </Fade>
+          <Container maxWidth="xl">
+            {renderPage()}
+          </Container>
         </Box>
       </Box>
+      <Dialog open={adminDialogOpen} onClose={() => setAdminDialogOpen(false)}>
+        <DialogTitle>Admin Authentication</DialogTitle>
+        <DialogContent>
+          {!showCode ? (
+            <>
+              <Typography gutterBottom>Security Question: What is the admin passphrase?</Typography>
+              <TextField
+                label="Answer"
+                fullWidth
+                value={securityAnswer}
+                onChange={e => setSecurityAnswer(e.target.value)}
+                sx={{ mt: 2 }}
+              />
+              {codeError && <Typography color="error" sx={{ mt: 1 }}>{codeError}</Typography>}
+            </>
+          ) : (
+            <>
+              <Typography gutterBottom>Correct! Your admin code is:</Typography>
+              <Paper sx={{ p: 2, mb: 2, mt: 1, fontWeight: 'bold', fontSize: 18 }}>{receivedCode}</Paper>
+              <Typography gutterBottom>Enter the code below to unlock admin view:</Typography>
+              <TextField
+                label="Admin Code"
+                fullWidth
+                value={codeInput}
+                onChange={e => setCodeInput(e.target.value)}
+                sx={{ mt: 2 }}
+              />
+              {codeError && <Typography color="error" sx={{ mt: 1 }}>{codeError}</Typography>}
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          {!showCode ? (
+            <Button onClick={handleSecuritySubmit} variant="contained">Submit</Button>
+          ) : (
+            <Button onClick={handleCodeSubmit} variant="contained">Unlock Admin</Button>
+          )}
+          <Button onClick={() => setAdminDialogOpen(false)}>Cancel</Button>
+        </DialogActions>
+      </Dialog>
     </ThemeProvider>
   );
 };

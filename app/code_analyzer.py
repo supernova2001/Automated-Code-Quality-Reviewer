@@ -8,6 +8,9 @@ import re
 from .schemas import Issue, AnalysisMetrics
 from .cache import cache, cached
 import hashlib
+from transformers import AutoTokenizer, AutoModel
+import torch
+import joblib
 
 class CodeAnalyzer:
     def __init__(self):
@@ -17,10 +20,26 @@ class CodeAnalyzer:
             'bandit': self._run_bandit
         }
         self.cache_ttl = 3600  # Cache results for 1 hour
+        # ML model and tokenizer (temporarily disabled)
+        # self.ml_tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
+        # self.ml_model = AutoModel.from_pretrained("microsoft/codebert-base")
+        # self.smell_clf = joblib.load("code_smell_classifier.pkl")
 
     def _generate_cache_key(self, code: str) -> str:
         """Generate a unique cache key for the code"""
         return hashlib.md5(code.encode()).hexdigest()
+
+    def get_codebert_embedding(self, code: str):
+        # Disabled
+        return None
+
+    def ml_code_smell_analysis(self, code: str):
+        # Temporarily return empty ML results
+        return {
+            "ai_code_smell": None,
+            "ai_confidence": None,
+            "ai_suggestions": []
+        }
 
     @cached(ttl_seconds=3600)
     async def analyze(self, code: str) -> Dict[str, Any]:
@@ -32,6 +51,9 @@ class CodeAnalyzer:
         # Check cache first
         cached_result = cache.get(cache_key)
         if cached_result is not None:
+            # Remove ml_prediction if present in cached result
+            if 'ml_prediction' in cached_result:
+                del cached_result['ml_prediction']
             return cached_result
 
         # Create temporary file for analysis
@@ -69,6 +91,14 @@ class CodeAnalyzer:
                 'flake8_issues': results['flake8']['issues'],
                 'bandit_issues': results['bandit']['issues']
             }
+
+            # ML-powered code smell/anti-pattern detection
+            ml_result = self.ml_code_smell_analysis(code)
+            result.update(ml_result)
+
+            # Ensure ml_prediction is never added to result
+            if 'ml_prediction' in result:
+                del result['ml_prediction']
 
             # Cache the result
             cache.set(cache_key, result, self.cache_ttl)

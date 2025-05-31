@@ -57,6 +57,10 @@ class CodeAnalysis(BaseModel):
     metrics: AnalysisMetrics
     flake8_issues: List[dict]
     bandit_issues: List[dict]
+ 
+    model_config = {
+        "from_attributes": True
+    }
 
-    class Config:
-        from_attributes = True 
+class LabelUpdate(BaseModel):
+    label: int 

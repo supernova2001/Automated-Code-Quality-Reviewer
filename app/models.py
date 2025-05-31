@@ -27,4 +27,5 @@ class CodeAnalysis(Base):
     # Analysis details
     metrics = Column(JSON)
     flake8_issues = Column(JSON)
-    bandit_issues = Column(JSON) 
+    bandit_issues = Column(JSON)
+    label = Column(Integer, nullable=True)  # 0=clean, 1=smell 

@@ -10,10 +10,6 @@ import {
   Grid,
   Card,
   CardContent,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
 } from '@mui/material';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -49,44 +45,36 @@ interface AnalysisResult {
     column?: number;
     rule_id?: string;
   }>;
-  ai_code_smell?: boolean;
-  ai_confidence?: number;
-  ai_suggestions?: string[];
-  label?: number;
+  ml_prediction?: {
+    prediction: number;  // 0 for clean, 1 for code smell
+    confidence: number;
+  };
 }
 
 interface ErrorResponse {
   detail: string;
 }
 
-const CodeAnalyzer: React.FC = () => {
+const UserCodeAnalyzer: React.FC = () => {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
-  const [label, setLabel] = useState<number | null>(null);
-  const [showLabelButton, setShowLabelButton] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     try {
       setLoading(true);
       setError(null);
-      setSuccessMessage(null);
-      const response = await axios.post('http://localhost:8000/analyze', { code });
+      const response = await axios.post('http://localhost:8000/analyze/user', { code });
       setResult(response.data);
     } catch (err) {
       const axiosError = err as AxiosError<ErrorResponse>;
       if (axiosError.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
         const errorMessage = axiosError.response.data?.detail || 'Failed to analyze code';
         setError(`Error: ${errorMessage}`);
       } else if (axiosError.request) {
-        // The request was made but no response was received
         setError('No response from server. Please check if the backend is running.');
       } else {
-        // Something happened in setting up the request that triggered an Error
         setError('Failed to analyze code. Please try again.');
       }
       console.error('Analysis error:', err);
@@ -94,33 +82,6 @@ const CodeAnalyzer: React.FC = () => {
       setLoading(false);
     }
   };
-
-  // Update label in DB
-  const handleLabelChange = async (newLabel: number) => {
-    if (!result) return;
-    try {
-      await axios.patch(`http://localhost:8000/analyses/${result.id}/label`, { label: newLabel });
-      setLabel(newLabel);
-      setSuccessMessage('Label added successfully!');
-      // Clear the form after successful label update
-      setTimeout(() => {
-        setCode('');
-        setResult(null);
-        setLabel(null);
-        setShowLabelButton(false);
-        setSuccessMessage(null);
-      }, 2000);
-    } catch (err) {
-      setError('Failed to update label.');
-    }
-  };
-
-  // Set label from result if present
-  React.useEffect(() => {
-    if (result && typeof result.label === 'number') {
-      setLabel(result.label);
-    }
-  }, [result]);
 
   return (
     <Box sx={{ mb: 4 }}>
@@ -152,12 +113,6 @@ const CodeAnalyzer: React.FC = () => {
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
-        </Alert>
-      )}
-
-      {successMessage && (
-        <Alert severity="success" sx={{ mb: 2 }}>
-          {successMessage}
         </Alert>
       )}
 
@@ -256,53 +211,23 @@ const CodeAnalyzer: React.FC = () => {
             </Grid>
           </Grid>
 
-          {/* Admin Labeling UI */}
-          <Box sx={{ mt: 3 }}>
-            <FormControl fullWidth>
-              <InputLabel id="label-select-label">Code Smell Label (Admin)</InputLabel>
-              <Select
-                labelId="label-select-label"
-                value={label !== null ? label : ''}
-                label="Code Smell Label (Admin)"
-                onChange={(e) => {
-                  const newLabel = Number(e.target.value);
-                  setLabel(newLabel);
-                  if (newLabel === 0) {
-                    setShowLabelButton(true);
-                  } else {
-                    setShowLabelButton(false);
-                    handleLabelChange(newLabel);
-                  }
-                }}
-              >
-                <MenuItem value={0}>Clean</MenuItem>
-                <MenuItem value={1}>Code Smell</MenuItem>
-              </Select>
-            </FormControl>
-
-            {showLabelButton && (
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={() => handleLabelChange(0)}
-                sx={{ mt: 2 }}
-              >
-                Add Label
-              </Button>
-            )}
-          </Box>
-
-          {result?.ai_code_smell !== undefined && (
-            <Alert severity={result.ai_code_smell ? "warning" : "success"} sx={{ mt: 2 }}>
-              <strong>AI Code Smell Detection:</strong> {result.ai_code_smell ? "Potential code smell detected." : "No code smell detected."}
-              <br />
-              <strong>Confidence:</strong> {result.ai_confidence !== undefined ? (result.ai_confidence * 100).toFixed(1) + '%' : 'N/A'}
-              {result.ai_suggestions && result.ai_suggestions.length > 0 && (
-                <ul>
-                  {result.ai_suggestions.map((s, i) => <li key={i}>{s}</li>)}
-                </ul>
-              )}
-            </Alert>
+          {/* ML Prediction Results */}
+          {result.ml_prediction && typeof result.ml_prediction.prediction === 'number' && (
+            <Card sx={{ mt: 2 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Code Smell Detection
+                </Typography>
+                <Alert 
+                  severity={result.ml_prediction.prediction === 0 ? "success" : "warning"}
+                  sx={{ mt: 1 }}
+                >
+                  <strong>Prediction:</strong> {result.ml_prediction.prediction === 0 ? "Clean Code" : "Code Smell Detected"}
+                  <br />
+                  <strong>Confidence:</strong> {(result.ml_prediction.confidence * 100).toFixed(1)}%
+                </Alert>
+              </CardContent>
+            </Card>
           )}
         </Box>
       )}
@@ -310,4 +235,4 @@ const CodeAnalyzer: React.FC = () => {
   );
 };
 
-export default CodeAnalyzer; 
+export default UserCodeAnalyzer; 
