@@ -1,5 +1,6 @@
-from fastapi import FastAPI, HTTPException, Depends, Request, Query
+from fastapi import FastAPI, HTTPException, Depends, Request, Query, Body
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import os
@@ -7,12 +8,14 @@ from dotenv import load_dotenv
 from datetime import datetime, timedelta
 import httpx
 import logging
+import copy
 
 from .database import get_db, engine
 from . import models, schemas, crud
 from .code_analyzer import CodeAnalyzer
 from .github import GitHubWebhook
 from .cache import cache
+from .ml_model import code_smell_detector
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -45,6 +48,10 @@ code_analyzer = CodeAnalyzer()
 webhook_secret = os.getenv("GITHUB_WEBHOOK_SECRET", "")
 logger.info(f"Loaded webhook secret length: {len(webhook_secret) if webhook_secret else 0}")
 github_webhook_handler = GitHubWebhook(webhook_secret=webhook_secret)
+
+ADMIN_SECURITY_ANSWER = os.getenv("ADMIN_SECURITY_ANSWER", "mysecretanswer")
+ADMIN_UNIQUE_CODE = os.getenv("ADMIN_UNIQUE_CODE", "ADM1N-C0DE-2024")
+print(f"[DEBUG] ADMIN_SECURITY_ANSWER is: '{ADMIN_SECURITY_ANSWER}'")
 
 @app.get("/")
 async def root():
@@ -84,12 +91,10 @@ async def analyze_code(
     """
     try:
         # Analyze the code
-        #adding a small comment to push a change
         analysis_result = await code_analyzer.analyze(code.code)
         
         # Create a CodeAnalysis object
         db_analysis = schemas.CodeAnalysis(
-            id=0,  # Will be set by the database
             code=code.code,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
@@ -106,7 +111,15 @@ async def analyze_code(
         # Save to database
         saved_analysis = crud.create_analysis(db, db_analysis)
         
-        return saved_analysis
+        # Convert SQLAlchemy model to Pydantic model
+        response_model = schemas.CodeAnalysis.model_validate(saved_analysis)
+        
+        # Add ML results to the response if present
+        response = response_model.model_dump()
+        for k in ['ai_code_smell', 'ai_confidence', 'ai_suggestions']:
+            if k in analysis_result:
+                response[k] = analysis_result[k]
+        return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -276,4 +289,190 @@ async def get_cache_stats():
         return stats
     except Exception as e:
         logger.error(f"Error getting cache stats: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e)) 
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.patch("/analyses/{analysis_id}/label")
+async def update_analysis_label(
+    analysis_id: int,
+    label_update: schemas.LabelUpdate,
+    db: Session = Depends(get_db)
+):
+    analysis = crud.get_analysis(db, analysis_id)
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Analysis not found")
+    analysis.label = label_update.label
+    db.commit()
+    db.refresh(analysis)
+    return {"id": analysis.id, "label": analysis.label}
+
+@app.post("/analyze/user")
+async def analyze_user_code(
+    code: schemas.CodeSubmission,
+    db: Session = Depends(get_db)
+):
+    try:
+        # Always create a new analysis coroutine and await it
+        analysis_result = await CodeAnalyzer().analyze(code.code)
+
+        # Try to train the model (if enough labeled data)
+        try:
+            train_result = code_smell_detector.train(db)
+            print("[DEBUG] ML model trained. Stats:", train_result)
+        except Exception as e:
+            print("[DEBUG] ML model training skipped or failed:", e)
+
+        # Get ML prediction
+        try:
+            ml_prediction = code_smell_detector.predict(code.code)
+            print("[DEBUG] ML Prediction:", ml_prediction)
+        except Exception as e:
+            print("[DEBUG] ML Prediction error:", e)
+            ml_prediction = None
+
+        # Create a CodeAnalysis object (do NOT include ml_prediction here)
+        db_analysis = schemas.CodeAnalysis(
+            code=code.code,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+            pylint_score=analysis_result['pylint_score'],
+            complexity_score=analysis_result['complexity_score'],
+            maintainability_score=analysis_result['maintainability_score'],
+            security_score=analysis_result['security_score'],
+            overall_score=analysis_result['overall_score'],
+            metrics=schemas.AnalysisMetrics(**analysis_result['metrics']),
+            flake8_issues=analysis_result['flake8_issues'],
+            bandit_issues=analysis_result['bandit_issues']
+        )
+
+        # Save to database
+        saved_analysis = crud.create_analysis(db, db_analysis)
+
+        # Convert SQLAlchemy model to Pydantic model
+        response_model = schemas.CodeAnalysis.model_validate(saved_analysis)
+
+        # Convert to dict and add ml_prediction
+        response = response_model.model_dump()
+        response['ml_prediction'] = ml_prediction
+
+        return response
+    except Exception as e:
+        print("[DEBUG] Exception in /analyze/user:", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/admin/ml/train")
+async def train_ml_model(db: Session = Depends(get_db)):
+    """
+    Train the ML model using labeled data
+    """
+    try:
+        results = code_smell_detector.train(db)
+        return {
+            "message": "Model trained successfully",
+            "results": results
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/admin/ml/train", response_class=HTMLResponse)
+async def train_ml_model_page():
+    """
+    Serve a simple HTML page with a button to train the ML model
+    """
+    return """
+    <!DOCTYPE html>
+    <html>
+        <head>
+            <title>Train ML Model</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    max-width: 800px;
+                    margin: 0 auto;
+                    padding: 20px;
+                }
+                .container {
+                    text-align: center;
+                    margin-top: 50px;
+                }
+                button {
+                    padding: 10px 20px;
+                    font-size: 16px;
+                    background-color: #2563eb;
+                    color: white;
+                    border: none;
+                    border-radius: 4px;
+                    cursor: pointer;
+                }
+                button:hover {
+                    background-color: #1d4ed8;
+                }
+                #result {
+                    margin-top: 20px;
+                    padding: 10px;
+                    border-radius: 4px;
+                }
+                .success {
+                    background-color: #dcfce7;
+                    color: #166534;
+                }
+                .error {
+                    background-color: #fee2e2;
+                    color: #991b1b;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>Train ML Model</h1>
+                <p>Click the button below to train the ML model using labeled data.</p>
+                <button onclick="trainModel()">Train Model</button>
+                <div id="result"></div>
+            </div>
+            <script>
+                async function trainModel() {
+                    const resultDiv = document.getElementById('result');
+                    resultDiv.innerHTML = 'Training model...';
+                    resultDiv.className = '';
+                    
+                    try {
+                        const response = await fetch('/admin/ml/train', {
+                            method: 'POST'
+                        });
+                        const data = await response.json();
+                        
+                        if (response.ok) {
+                            resultDiv.innerHTML = `
+                                <strong>Success!</strong><br>
+                                Training Accuracy: ${(data.results.train_accuracy * 100).toFixed(1)}%<br>
+                                Test Accuracy: ${(data.results.test_accuracy * 100).toFixed(1)}%<br>
+                                Samples Used: ${data.results.samples_used}
+                            `;
+                            resultDiv.className = 'success';
+                        } else {
+                            throw new Error(data.detail || 'Failed to train model');
+                        }
+                    } catch (error) {
+                        resultDiv.innerHTML = `<strong>Error:</strong> ${error.message}`;
+                        resultDiv.className = 'error';
+                    }
+                }
+            </script>
+        </body>
+    </html>
+    """
+
+@app.post("/api/admin/auth")
+async def admin_authenticate(answer: str = Body(..., embed=True)):
+    if answer.strip().lower() == ADMIN_SECURITY_ANSWER.strip().lower():
+        return {"code": ADMIN_UNIQUE_CODE}
+    else:
+        raise HTTPException(status_code=401, detail="Incorrect answer.")
+
+@app.post("/api/admin/verify")
+async def admin_verify(code: str = Body(..., embed=True)):
+    if code == ADMIN_UNIQUE_CODE:
+        return {"admin": True}
+    else:
+        return {"admin": False} 
