@@ -49,6 +49,7 @@ interface AnalysisResult {
     prediction: number;  // 0 for clean, 1 for code smell
     confidence: number;
   };
+  ai_tips?: string;
 }
 
 interface ErrorResponse {
@@ -226,6 +227,23 @@ const UserCodeAnalyzer: React.FC = () => {
                   <br />
                   <strong>Confidence:</strong> {(result.ml_prediction.confidence * 100).toFixed(1)}%
                 </Alert>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* AI Tips Section */}
+          {result.ai_tips && (
+            <Card sx={{ mt: 2, background: 'linear-gradient(135deg, #f0f4ff 60%, #e0e7ff 100%)', border: '1px solid #c7d2fe', boxShadow: 2 }}>
+              <CardContent>
+                <Box display="flex" alignItems="center" mb={1}>
+                  <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f916.png" alt="AI" width={32} height={32} style={{ marginRight: 12 }} />
+                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#3730a3', mb: 0 }}>
+                    AI Suggestions
+                  </Typography>
+                </Box>
+                <Typography variant="body1" sx={{ color: '#312e81', fontSize: 17, lineHeight: 1.7 }}>
+                  {result.ai_tips}
+                </Typography>
               </CardContent>
             </Card>
           )}

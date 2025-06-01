@@ -86,6 +86,7 @@ interface Analysis {
     column?: number;
     rule_id?: string;
   }>;
+  ai_tips?: string;
 }
 
 const AnalysisHistory: React.FC = () => {
@@ -358,6 +359,23 @@ const AnalysisHistory: React.FC = () => {
                       <strong>Confidence:</strong> {(analysis.ml_prediction.confidence * 100).toFixed(1)}%
                     </Alert>
                   </>
+                )}
+
+                {/* AI Tips Section */}
+                {analysis.ai_tips && (
+                  <Card sx={{ mb: 2, background: 'linear-gradient(135deg, #f0f4ff 60%, #e0e7ff 100%)', border: '1px solid #c7d2fe', boxShadow: 2 }}>
+                    <CardContent>
+                      <Box display="flex" alignItems="center" mb={1}>
+                        <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f916.png" alt="AI" width={32} height={32} style={{ marginRight: 12 }} />
+                        <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#3730a3', mb: 0 }}>
+                          AI Suggestions
+                        </Typography>
+                      </Box>
+                      <Typography variant="body1" sx={{ color: '#312e81', fontSize: 17, lineHeight: 1.7 }}>
+                        {analysis.ai_tips}
+                      </Typography>
+                    </CardContent>
+                  </Card>
                 )}
 
                 <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>

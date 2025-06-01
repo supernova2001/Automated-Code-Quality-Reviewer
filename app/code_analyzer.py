@@ -11,6 +11,9 @@ import hashlib
 from transformers import AutoTokenizer, AutoModel
 import torch
 import joblib
+import openai
+
+OPENAI_API_KEY = "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"  # Replace with your actual key or load from env
 
 class CodeAnalyzer:
     def __init__(self):
@@ -40,6 +43,27 @@ class CodeAnalyzer:
             "ai_confidence": None,
             "ai_suggestions": []
         }
+
+    def get_gpt_suggestions(self, metrics: dict, code: str = "") -> str:
+        prompt = (
+            f"Given these code metrics:\n"
+            f"- Code size: {metrics['code_size']} lines\n"
+            f"- Functions: {metrics['function_count']}\n"
+            f"- Classes: {metrics['class_count']}\n"
+            f"- Comment ratio: {metrics['comment_ratio']}%\n"
+            f"- Complexity score: {metrics['complexity_score']}\n"
+            f"- Pylint score: {metrics['pylint_score']}\n"
+            f"Suggest 3 actionable tips to improve code quality. "
+            f"{'Here is the code:\n' + code if code else ''}"
+        )
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            api_key=OPENAI_API_KEY,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=200,
+            temperature=0.7,
+        )
+        return response.choices[0].message["content"].strip()
 
     @cached(ttl_seconds=3600)
     async def analyze(self, code: str) -> Dict[str, Any]:
@@ -102,6 +126,12 @@ class CodeAnalyzer:
             # Ensure ml_prediction is never added to result
             if 'ml_prediction' in result:
                 del result['ml_prediction']
+
+            # Add ChatGPT AI tips
+            try:
+                result['ai_tips'] = self.get_gpt_suggestions(metrics.model_dump(), code)
+            except Exception as e:
+                result['ai_tips'] = f"AI tips unavailable: {str(e)}"
 
             # Cache the result
             cache.set(cache_key, result, self.cache_ttl)

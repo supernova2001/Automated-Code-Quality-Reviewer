@@ -131,10 +131,17 @@ async def get_analyses(
     db: Session = Depends(get_db)
 ):
     """
-    Get list of previous code analyses
+    Get list of previous code analyses, with AI tips generated for each analysis
     """
     analyses = crud.get_analyses(db, skip=skip, limit=limit, repository=repository)
-    return analyses
+    results = []
+    for analysis in analyses:
+        if hasattr(analysis, 'model_dump'):
+            analysis_dict = analysis.model_dump()
+        else:
+            analysis_dict = {c.name: getattr(analysis, c.name) for c in analysis.__table__.columns}
+        results.append(analysis_dict)
+    return results
 
 @app.get("/analyses/{analysis_id}", response_model=schemas.CodeAnalysis)
 async def get_analysis(
@@ -311,52 +318,37 @@ async def analyze_user_code(
     db: Session = Depends(get_db)
 ):
     try:
-        # Always create a new analysis coroutine and await it
         analysis_result = await CodeAnalyzer().analyze(code.code)
+        analysis_result['code'] = code.code
 
-        # Try to train the model (if enough labeled data)
+        # Correct import for the ML model
         try:
-            train_result = code_smell_detector.train(db)
-            print("[DEBUG] ML model trained. Stats:", train_result)
-        except Exception as e:
-            print("[DEBUG] ML model training skipped or failed:", e)
-
-        # Get ML prediction
-        try:
+            from .ml_model import code_smell_detector
             ml_prediction = code_smell_detector.predict(code.code)
-            print("[DEBUG] ML Prediction:", ml_prediction)
+            analysis_result['ml_prediction'] = ml_prediction
         except Exception as e:
-            print("[DEBUG] ML Prediction error:", e)
-            ml_prediction = None
+            analysis_result['ml_prediction'] = {
+                "prediction": None,
+                "confidence": None,
+                "error": f"ML model unavailable: {str(e)}"
+            }
 
-        # Create a CodeAnalysis object (do NOT include ml_prediction here)
-        db_analysis = schemas.CodeAnalysis(
-            code=code.code,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
-            pylint_score=analysis_result['pylint_score'],
-            complexity_score=analysis_result['complexity_score'],
-            maintainability_score=analysis_result['maintainability_score'],
-            security_score=analysis_result['security_score'],
-            overall_score=analysis_result['overall_score'],
-            metrics=schemas.AnalysisMetrics(**analysis_result['metrics']),
-            flake8_issues=analysis_result['flake8_issues'],
-            bandit_issues=analysis_result['bandit_issues']
-        )
+        # Add ChatGPT AI tips to the response
+        try:
+            ai_tips = CodeAnalyzer().get_gpt_suggestions(analysis_result['metrics'], code.code)
+            analysis_result['ai_tips'] = ai_tips
+        except Exception as e:
+            analysis_result['ai_tips'] = f"AI tips unavailable: {str(e)}"
 
-        # Save to database
-        saved_analysis = crud.create_analysis(db, db_analysis)
+        # Optionally: train the model (after prediction)
+        try:
+            from .ml_model import code_smell_detector
+            code_smell_detector.train(db)
+        except Exception:
+            pass
 
-        # Convert SQLAlchemy model to Pydantic model
-        response_model = schemas.CodeAnalysis.model_validate(saved_analysis)
-
-        # Convert to dict and add ml_prediction
-        response = response_model.model_dump()
-        response['ml_prediction'] = ml_prediction
-
-        return response
+        return analysis_result
     except Exception as e:
-        print("[DEBUG] Exception in /analyze/user:", e)
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/admin/ml/train")
