@@ -47,6 +47,10 @@ interface Analysis {
   maintainability_score: number;
   security_score: number;
   ai_score?: number;
+  ml_prediction?: {
+    prediction: number;  // 0 for clean, 1 for code smell
+    confidence: number;
+  };
   ai_analysis?: {
     code_smells: Array<{
       type: string;
@@ -338,107 +342,124 @@ const AnalysisHistory: React.FC = () => {
 
                 <Divider />
 
-                <Box>
-                  <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
-                    <BuildIcon color="primary" />
-                    <Typography variant="h6">Code Metrics</Typography>
-                  </Stack>
-                  <Grid container spacing={2}>
-                    <Grid item xs={6} sm={4} md={2}>
-                      <Paper 
-                        elevation={0}
-                        sx={{ 
-                          p: 2,
-                          textAlign: 'center',
-                          bgcolor: 'background.default',
-                          borderRadius: 2
-                        }}
-                      >
-                        <Typography variant="subtitle2" color="text.secondary">
-                          Code Size
-                        </Typography>
-                        <Typography variant="h6">
-                          {analysis.metrics.code_size}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          lines
-                        </Typography>
-                      </Paper>
-                    </Grid>
-                    <Grid item xs={6} sm={4} md={2}>
-                      <Paper 
-                        elevation={0}
-                        sx={{ 
-                          p: 2,
-                          textAlign: 'center',
-                          bgcolor: 'background.default',
-                          borderRadius: 2
-                        }}
-                      >
-                        <Typography variant="subtitle2" color="text.secondary">
-                          Functions
-                        </Typography>
-                        <Typography variant="h6">
-                          {analysis.metrics.function_count}
-                        </Typography>
-                      </Paper>
-                    </Grid>
-                    <Grid item xs={6} sm={4} md={2}>
-                      <Paper 
-                        elevation={0}
-                        sx={{ 
-                          p: 2,
-                          textAlign: 'center',
-                          bgcolor: 'background.default',
-                          borderRadius: 2
-                        }}
-                      >
-                        <Typography variant="subtitle2" color="text.secondary">
-                          Classes
-                        </Typography>
-                        <Typography variant="h6">
-                          {analysis.metrics.class_count}
-                        </Typography>
-                      </Paper>
-                    </Grid>
-                    <Grid item xs={6} sm={4} md={2}>
-                      <Paper 
-                        elevation={0}
-                        sx={{ 
-                          p: 2,
-                          textAlign: 'center',
-                          bgcolor: 'background.default',
-                          borderRadius: 2
-                        }}
-                      >
-                        <Typography variant="subtitle2" color="text.secondary">
-                          Comment Ratio
-                        </Typography>
-                        <Typography variant="h6">
-                          {analysis.metrics.comment_ratio.toFixed(1)}%
-                        </Typography>
-                      </Paper>
-                    </Grid>
-                    <Grid item xs={6} sm={4} md={2}>
-                      <Paper 
-                        elevation={0}
-                        sx={{ 
-                          p: 2,
-                          textAlign: 'center',
-                          bgcolor: 'background.default',
-                          borderRadius: 2
-                        }}
-                      >
-                        <Typography variant="subtitle2" color="text.secondary">
-                          Test Coverage
-                        </Typography>
-                        <Typography variant="h6">
-                          {analysis.metrics.test_coverage ? `${analysis.metrics.test_coverage.toFixed(1)}%` : 'N/A'}
-                        </Typography>
-                      </Paper>
-                    </Grid>
+                {/* Code Smell Detection */}
+                {analysis.ml_prediction && (
+                  <>
+                    <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2, mt: 2 }}>
+                      <SecurityIcon color="primary" />
+                      <Typography variant="h6">Code Smell Detection</Typography>
+                    </Stack>
+                    <Alert 
+                      severity={analysis.ml_prediction.prediction === 0 ? "success" : "warning"}
+                      sx={{ mb: 2 }}
+                    >
+                      <strong>Prediction:</strong> {analysis.ml_prediction.prediction === 0 ? "Clean Code" : "Code Smell Detected"}
+                      <br />
+                      <strong>Confidence:</strong> {(analysis.ml_prediction.confidence * 100).toFixed(1)}%
+                    </Alert>
+                  </>
+                )}
+
+                <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+                  <BuildIcon color="primary" />
+                  <Typography variant="h6">Code Metrics</Typography>
+                </Stack>
+
+                <Grid container spacing={2}>
+                  <Grid item xs={6} sm={4} md={2}>
+                    <Paper 
+                      elevation={0}
+                      sx={{ 
+                        p: 2,
+                        textAlign: 'center',
+                        bgcolor: 'background.default',
+                        borderRadius: 2
+                      }}
+                    >
+                      <Typography variant="subtitle2" color="text.secondary">
+                        Code Size
+                      </Typography>
+                      <Typography variant="h6">
+                        {analysis.metrics.code_size}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        lines
+                      </Typography>
+                    </Paper>
                   </Grid>
-                </Box>
+                  <Grid item xs={6} sm={4} md={2}>
+                    <Paper 
+                      elevation={0}
+                      sx={{ 
+                        p: 2,
+                        textAlign: 'center',
+                        bgcolor: 'background.default',
+                        borderRadius: 2
+                      }}
+                    >
+                      <Typography variant="subtitle2" color="text.secondary">
+                        Functions
+                      </Typography>
+                      <Typography variant="h6">
+                        {analysis.metrics.function_count}
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={6} sm={4} md={2}>
+                    <Paper 
+                      elevation={0}
+                      sx={{ 
+                        p: 2,
+                        textAlign: 'center',
+                        bgcolor: 'background.default',
+                        borderRadius: 2
+                      }}
+                    >
+                      <Typography variant="subtitle2" color="text.secondary">
+                        Classes
+                      </Typography>
+                      <Typography variant="h6">
+                        {analysis.metrics.class_count}
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={6} sm={4} md={2}>
+                    <Paper 
+                      elevation={0}
+                      sx={{ 
+                        p: 2,
+                        textAlign: 'center',
+                        bgcolor: 'background.default',
+                        borderRadius: 2
+                      }}
+                    >
+                      <Typography variant="subtitle2" color="text.secondary">
+                        Comment Ratio
+                      </Typography>
+                      <Typography variant="h6">
+                        {analysis.metrics.comment_ratio.toFixed(1)}%
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={6} sm={4} md={2}>
+                    <Paper 
+                      elevation={0}
+                      sx={{ 
+                        p: 2,
+                        textAlign: 'center',
+                        bgcolor: 'background.default',
+                        borderRadius: 2
+                      }}
+                    >
+                      <Typography variant="subtitle2" color="text.secondary">
+                        Test Coverage
+                      </Typography>
+                      <Typography variant="h6">
+                        {analysis.metrics.test_coverage ? `${analysis.metrics.test_coverage.toFixed(1)}%` : 'N/A'}
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                </Grid>
 
                 {analysis.ai_analysis && (
                   <>
