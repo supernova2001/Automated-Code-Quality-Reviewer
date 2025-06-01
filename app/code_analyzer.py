@@ -69,9 +69,12 @@ class CodeAnalyzer:
 
             # Calculate metrics
             metrics = self._calculate_metrics(code)
+            
+            # Update pylint score with actual value
+            metrics.pylint_score = results['pylint']['score']
 
-            # Calculate scores
-            scores = self._calculate_scores(metrics)
+            # Calculate scores (now pass bandit issues)
+            scores = self._calculate_scores(metrics, results['bandit']['issues'])
 
             # Structure the response
             result = {
@@ -132,7 +135,7 @@ class CodeAnalyzer:
                         line=issue['line'],
                         column=issue['column'],
                         rule_id=issue['symbol']
-                    )
+                    ).model_dump()  # Convert Issue object to dictionary
                     for issue in issues
                 ]
             }
@@ -158,7 +161,7 @@ class CodeAnalyzer:
                         line=issue['line'],
                         column=issue['column'],
                         rule_id=issue['code']
-                    )
+                    ).model_dump()  # Convert Issue object to dictionary
                     for issue in issues
                 ]
             }
@@ -184,7 +187,7 @@ class CodeAnalyzer:
                         line=issue['line_number'],
                         column=None,
                         rule_id=issue['test_id']
-                    )
+                    ).model_dump()  # Convert Issue object to dictionary
                     for issue in issues
                 ]
             }
@@ -208,8 +211,8 @@ class CodeAnalyzer:
         # Calculate complexity (simple metric based on function count and code size)
         complexity_score = (function_count * 2 + len(code_lines) * 0.1)
         
-        # Calculate pylint score (placeholder - would be based on actual pylint results)
-        pylint_score = 80.0  # Placeholder value
+        # Get pylint score from the results (will be updated in analyze method)
+        pylint_score = 0.0  # Initial value, will be updated with actual score
         
         return AnalysisMetrics(
             code_size=len(code_lines),
@@ -220,18 +223,18 @@ class CodeAnalyzer:
             pylint_score=pylint_score
         )
 
-    def _calculate_scores(self, metrics: AnalysisMetrics) -> dict:
-        """Calculate various quality scores based on metrics"""
+    def _calculate_scores(self, metrics: AnalysisMetrics, bandit_issues: list) -> dict:
+        """Calculate various quality scores based on metrics and security issues"""
         # Calculate maintainability score based on metrics
         maintainability_score = min(100, max(0, (
             (metrics.function_count * 5) +  # Reward for having functions
             (metrics.class_count * 10) +    # Reward for having classes
             (metrics.comment_ratio * 2)     # Reward for having comments
         )))
-        
-        # Calculate security score (placeholder - would be based on security analysis)
-        security_score = 80  # Placeholder value
-        
+        # Calculate security score based on Bandit issues
+        base_score = 100
+        deduction = len(bandit_issues) * 10  # Deduct 10 points per issue
+        security_score = max(0, base_score - deduction)
         # Calculate overall score (weighted average)
         overall_score = (
             (metrics.complexity_score * 0.3) +
@@ -239,7 +242,6 @@ class CodeAnalyzer:
             (security_score * 0.2) +
             (metrics.pylint_score * 0.2)
         )
-        
         return {
             "complexity_score": round(metrics.complexity_score, 2),
             "maintainability_score": round(maintainability_score, 2),
