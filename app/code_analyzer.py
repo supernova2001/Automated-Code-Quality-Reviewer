@@ -13,7 +13,10 @@ import torch
 import joblib
 import openai
 
-OPENAI_API_KEY = "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"  # Replace with your actual key or load from env
+# Load API key from environment variable
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+if not OPENAI_API_KEY:
+    raise ValueError("OPENAI_API_KEY environment variable is not set")
 
 class CodeAnalyzer:
     def __init__(self):
