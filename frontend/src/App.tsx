@@ -21,7 +21,8 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  Button
+  Button,
+  alpha
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -46,19 +47,30 @@ const theme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#2563eb',
+      main: '#0F172A',
+      light: '#1E293B',
+      dark: '#020617',
     },
     secondary: {
-      main: '#7c3aed',
+      main: '#3B82F6',
+      light: '#60A5FA',
+      dark: '#2563EB',
     },
     background: {
-      default: '#f8fafc',
-      paper: '#ffffff',
+      default: '#F8FAFC',
+      paper: '#FFFFFF',
+    },
+    text: {
+      primary: '#0F172A',
+      secondary: '#475569',
     },
   },
   typography: {
     fontFamily: [
       'Inter',
+      'system-ui',
+      '-apple-system',
+      'BlinkMacSystemFont',
       'Segoe UI',
       'Roboto',
       'Helvetica Neue',
@@ -66,23 +78,81 @@ const theme = createTheme({
       'sans-serif',
     ].join(','),
     h1: {
-      fontWeight: 600,
+      fontWeight: 700,
+      fontSize: '2.5rem',
+      letterSpacing: '-0.02em',
     },
     h2: {
-      fontWeight: 600,
+      fontWeight: 700,
+      fontSize: '2rem',
+      letterSpacing: '-0.01em',
     },
     h3: {
       fontWeight: 600,
+      fontSize: '1.5rem',
+    },
+    h6: {
+      fontWeight: 600,
+      fontSize: '1.125rem',
+    },
+    button: {
+      textTransform: 'none',
+      fontWeight: 500,
     },
   },
   shape: {
-    borderRadius: 8,
+    borderRadius: 12,
   },
   components: {
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#FFFFFF',
+          color: '#0F172A',
+          boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
+        },
+      },
+    },
     MuiPaper: {
       styleOverrides: {
         root: {
           boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+          padding: '8px 16px',
+        },
+        contained: {
+          boxShadow: 'none',
+          '&:hover': {
+            boxShadow: 'none',
+          },
+        },
+      },
+    },
+    MuiListItem: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+          margin: '4px 8px',
+          '&.Mui-selected': {
+            backgroundColor: alpha('#3B82F6', 0.1),
+            '&:hover': {
+              backgroundColor: alpha('#3B82F6', 0.15),
+            },
+          },
+        },
+      },
+    },
+    MuiDrawer: {
+      styleOverrides: {
+        paper: {
+          borderRight: 'none',
+          boxShadow: '1px 0 3px 0 rgb(0 0 0 / 0.1)',
         },
       },
     },
@@ -158,8 +228,8 @@ const App: React.FC = () => {
 
   const drawer = (
     <div>
-      <Toolbar />
-      <List>
+      <Toolbar sx={{ minHeight: '64px' }} />
+      <List sx={{ px: 2 }}>
         {menuItems.filter(item => !item.adminOnly || adminUnlocked).map((item) => (
           <ListItem 
             button 
@@ -171,9 +241,26 @@ const App: React.FC = () => {
               }
             }}
             selected={currentPage === item.page}
+            sx={{
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                backgroundColor: alpha('#3B82F6', 0.05),
+              },
+            }}
           >
-            <ListItemIcon>{item.icon}</ListItemIcon>
-            <ListItemText primary={item.text} />
+            <ListItemIcon sx={{ 
+              color: currentPage === item.page ? 'primary.main' : 'text.secondary',
+              minWidth: 40,
+            }}>
+              {item.icon}
+            </ListItemIcon>
+            <ListItemText 
+              primary={item.text} 
+              primaryTypographyProps={{
+                fontWeight: currentPage === item.page ? 600 : 400,
+                color: currentPage === item.page ? 'primary.main' : 'text.primary',
+              }}
+            />
           </ListItem>
         ))}
       </List>
@@ -202,9 +289,9 @@ const App: React.FC = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Box sx={{ display: 'flex' }}>
+      <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
         <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
-          <Toolbar>
+          <Toolbar sx={{ minHeight: '64px' }}>
             <IconButton
               color="inherit"
               aria-label="open drawer"
@@ -214,15 +301,32 @@ const App: React.FC = () => {
             >
               <MenuIcon />
             </IconButton>
-            <Typography variant="h6" noWrap component="div">
+            <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 600 }}>
               Code Quality Reviewer
             </Typography>
             <Box sx={{ flexGrow: 1 }} />
-            {adminUnlocked && (
-              <Button color="inherit" onClick={handleAdminLogout}>Logout Admin</Button>
-            )}
-            {!adminUnlocked && (
-              <Button color="inherit" onClick={handleAdminViewClick}>Admin View</Button>
+            {adminUnlocked ? (
+              <Button 
+                color="inherit" 
+                onClick={handleAdminLogout}
+                sx={{ 
+                  color: 'text.secondary',
+                  '&:hover': { color: 'text.primary' }
+                }}
+              >
+                Logout Admin
+              </Button>
+            ) : (
+              <Button 
+                color="inherit" 
+                onClick={handleAdminViewClick}
+                sx={{ 
+                  color: 'text.secondary',
+                  '&:hover': { color: 'text.primary' }
+                }}
+              >
+                Admin View
+              </Button>
             )}
           </Toolbar>
         </AppBar>

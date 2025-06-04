@@ -14,10 +14,18 @@ import {
   Select,
   FormControl,
   InputLabel,
+  Container,
+  LinearProgress,
+  Tooltip,
+  IconButton,
 } from '@mui/material';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import axios, { AxiosError } from 'axios';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 
 interface AnalysisResult {
   id: number;
@@ -122,13 +130,50 @@ const CodeAnalyzer: React.FC = () => {
     }
   }, [result]);
 
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return '#10B981';
+    if (score >= 60) return '#F59E0B';
+    return '#EF4444';
+  };
+
+  const getScoreIcon = (score: number) => {
+    if (score >= 80) return <CheckCircleOutlineIcon sx={{ color: '#10B981' }} />;
+    if (score >= 60) return <WarningAmberIcon sx={{ color: '#F59E0B' }} />;
+    return <ErrorOutlineIcon sx={{ color: '#EF4444' }} />;
+  };
+
   return (
-    <Box sx={{ mb: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        Code Quality Analyzer
-      </Typography>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Box sx={{ mb: 6 }}>
+        <Typography 
+          variant="h4" 
+          sx={{ 
+            fontWeight: 700,
+            mb: 1,
+            background: 'linear-gradient(135deg, #0F172A 0%, #3B82F6 100%)',
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            color: 'transparent',
+          }}
+        >
+          Code Quality Analyzer
+        </Typography>
+        <Typography variant="subtitle1" color="text.secondary">
+          Analyze your Python code for quality, maintainability, and security issues
+        </Typography>
+      </Box>
       
-      <Paper sx={{ p: 2, mb: 2 }}>
+      <Paper 
+        elevation={0}
+        sx={{ 
+          p: 4, 
+          mb: 4,
+          borderRadius: 4,
+          border: '1px solid',
+          borderColor: 'divider',
+          background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.02) 0%, rgba(37, 99, 235, 0.02) 100%)',
+        }}
+      >
         <TextField
           fullWidth
           multiline
@@ -137,47 +182,101 @@ const CodeAnalyzer: React.FC = () => {
           label="Enter your code here"
           value={code}
           onChange={(e) => setCode(e.target.value)}
-          sx={{ mb: 2 }}
+          sx={{ 
+            mb: 3,
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2,
+              fontFamily: 'monospace',
+            },
+          }}
         />
         <Button
           variant="contained"
           onClick={handleSubmit}
           disabled={loading || !code.trim()}
-          sx={{ mr: 2 }}
+          sx={{ 
+            px: 4,
+            py: 1.5,
+            borderRadius: 2,
+            fontSize: '1.1rem',
+            textTransform: 'none',
+            background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
+            '&:hover': {
+              background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+            },
+          }}
         >
-          {loading ? <CircularProgress size={24} /> : 'Analyze Code'}
+          {loading ? <CircularProgress size={24} color="inherit" /> : 'Analyze Code'}
         </Button>
       </Paper>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert 
+          severity="error" 
+          sx={{ 
+            mb: 3,
+            borderRadius: 2,
+            '& .MuiAlert-icon': {
+              color: '#EF4444',
+            },
+          }}
+        >
           {error}
         </Alert>
       )}
 
       {successMessage && (
-        <Alert severity="success" sx={{ mb: 2 }}>
+        <Alert 
+          severity="success" 
+          sx={{ 
+            mb: 3,
+            borderRadius: 2,
+            '& .MuiAlert-icon': {
+              color: '#10B981',
+            },
+          }}
+        >
           {successMessage}
         </Alert>
       )}
 
       {result && (
         <Box>
-          <Typography variant="h5" gutterBottom>
+          <Typography 
+            variant="h5" 
+            sx={{ 
+              mb: 4,
+              fontWeight: 600,
+            }}
+          >
             Analysis Results
           </Typography>
           
-          <Grid container spacing={2}>
+          <Grid container spacing={4}>
             <Grid item xs={12} md={6}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Code Preview
-                  </Typography>
+              <Card 
+                elevation={0}
+                sx={{ 
+                  borderRadius: 4,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  overflow: 'hidden',
+                }}
+              >
+                <CardContent sx={{ p: 0 }}>
+                  <Box sx={{ p: 3, borderBottom: '1px solid', borderColor: 'divider' }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                      Code Preview
+                    </Typography>
+                  </Box>
                   <SyntaxHighlighter
                     language="python"
                     style={vscDarkPlus}
-                    customStyle={{ maxHeight: '400px' }}
+                    customStyle={{ 
+                      margin: 0,
+                      borderRadius: 0,
+                      fontSize: '0.9rem',
+                    }}
                   >
                     {result.code}
                   </SyntaxHighlighter>
@@ -186,127 +285,188 @@ const CodeAnalyzer: React.FC = () => {
             </Grid>
             
             <Grid item xs={12} md={6}>
-              <Card>
+              <Card 
+                elevation={0}
+                sx={{ 
+                  borderRadius: 4,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  mb: 4,
+                }}
+              >
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
                     Quality Scores
                   </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={6}>
-                      <Typography variant="subtitle1">Overall Score</Typography>
-                      <Typography variant="h4" color="primary">
-                        {result.overall_score}%
-                      </Typography>
+                  <Grid container spacing={3}>
+                    <Grid item xs={12}>
+                      <Box sx={{ mb: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
+                            Overall Score
+                          </Typography>
+                          <Tooltip title="Combined score based on all metrics">
+                            <IconButton size="small" sx={{ ml: 1 }}>
+                              <InfoOutlinedIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          {getScoreIcon(result.overall_score)}
+                          <Typography 
+                            variant="h4" 
+                            sx={{ 
+                              color: getScoreColor(result.overall_score),
+                              fontWeight: 700,
+                            }}
+                          >
+                            {result.overall_score}%
+                          </Typography>
+                        </Box>
+                        <LinearProgress 
+                          variant="determinate" 
+                          value={result.overall_score}
+                          sx={{ 
+                            mt: 1,
+                            height: 8,
+                            borderRadius: 4,
+                            backgroundColor: 'rgba(0,0,0,0.1)',
+                            '& .MuiLinearProgress-bar': {
+                              backgroundColor: getScoreColor(result.overall_score),
+                            },
+                          }}
+                        />
+                      </Box>
                     </Grid>
                     <Grid item xs={6}>
-                      <Typography variant="subtitle1">Pylint Score</Typography>
-                      <Typography variant="h4" color="secondary">
-                        {result.pylint_score}%
-                      </Typography>
+                      <Box>
+                        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+                          Pylint Score
+                        </Typography>
+                        <Typography 
+                          variant="h5" 
+                          sx={{ 
+                            color: getScoreColor(result.pylint_score),
+                            fontWeight: 600,
+                          }}
+                        >
+                          {result.pylint_score}%
+                        </Typography>
+                      </Box>
                     </Grid>
                     <Grid item xs={6}>
-                      <Typography variant="subtitle1">Complexity</Typography>
-                      <Typography variant="h4" color="info.main">
-                        {result.complexity_score}%
-                      </Typography>
+                      <Box>
+                        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+                          Complexity
+                        </Typography>
+                        <Typography 
+                          variant="h5" 
+                          sx={{ 
+                            color: getScoreColor(result.complexity_score),
+                            fontWeight: 600,
+                          }}
+                        >
+                          {result.complexity_score}%
+                        </Typography>
+                      </Box>
                     </Grid>
                     <Grid item xs={6}>
-                      <Typography variant="subtitle1">Security</Typography>
-                      <Typography variant="h4" color="warning.main">
-                        {result.security_score}%
-                      </Typography>
+                      <Box>
+                        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+                          Security
+                        </Typography>
+                        <Typography 
+                          variant="h5" 
+                          sx={{ 
+                            color: getScoreColor(result.security_score),
+                            fontWeight: 600,
+                          }}
+                        >
+                          {result.security_score}%
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Box>
+                        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+                          Maintainability
+                        </Typography>
+                        <Typography 
+                          variant="h5" 
+                          sx={{ 
+                            color: getScoreColor(result.maintainability_score),
+                            fontWeight: 600,
+                          }}
+                        >
+                          {result.maintainability_score}%
+                        </Typography>
+                      </Box>
                     </Grid>
                   </Grid>
                 </CardContent>
               </Card>
 
-              <Card sx={{ mt: 2 }}>
+              <Card 
+                elevation={0}
+                sx={{ 
+                  borderRadius: 4,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                }}
+              >
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
                     Code Metrics
                   </Typography>
-                  <Grid container spacing={2}>
+                  <Grid container spacing={3}>
                     <Grid item xs={6}>
-                      <Typography variant="subtitle1">Code Size</Typography>
-                      <Typography variant="h6">
-                        {result.metrics.code_size} lines
-                      </Typography>
+                      <Box>
+                        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+                          Code Size
+                        </Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                          {result.metrics.code_size} lines
+                        </Typography>
+                      </Box>
                     </Grid>
                     <Grid item xs={6}>
-                      <Typography variant="subtitle1">Functions</Typography>
-                      <Typography variant="h6">
-                        {result.metrics.function_count}
-                      </Typography>
+                      <Box>
+                        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+                          Functions
+                        </Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                          {result.metrics.function_count}
+                        </Typography>
+                      </Box>
                     </Grid>
                     <Grid item xs={6}>
-                      <Typography variant="subtitle1">Classes</Typography>
-                      <Typography variant="h6">
-                        {result.metrics.class_count}
-                      </Typography>
+                      <Box>
+                        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+                          Classes
+                        </Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                          {result.metrics.class_count}
+                        </Typography>
+                      </Box>
                     </Grid>
                     <Grid item xs={6}>
-                      <Typography variant="subtitle1">Comment Ratio</Typography>
-                      <Typography variant="h6">
-                        {result.metrics.comment_ratio}%
-                      </Typography>
+                      <Box>
+                        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+                          Comment Ratio
+                        </Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                          {result.metrics.comment_ratio}%
+                        </Typography>
+                      </Box>
                     </Grid>
                   </Grid>
                 </CardContent>
               </Card>
             </Grid>
           </Grid>
-
-          {/* Admin Labeling UI */}
-          <Box sx={{ mt: 3 }}>
-            <FormControl fullWidth>
-              <InputLabel id="label-select-label">Code Smell Label (Admin)</InputLabel>
-              <Select
-                labelId="label-select-label"
-                value={label !== null ? label : ''}
-                label="Code Smell Label (Admin)"
-                onChange={(e) => {
-                  const newLabel = Number(e.target.value);
-                  setLabel(newLabel);
-                  if (newLabel === 0) {
-                    setShowLabelButton(true);
-                  } else {
-                    setShowLabelButton(false);
-                    handleLabelChange(newLabel);
-                  }
-                }}
-              >
-                <MenuItem value={0}>Clean</MenuItem>
-                <MenuItem value={1}>Code Smell</MenuItem>
-              </Select>
-            </FormControl>
-
-            {showLabelButton && (
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={() => handleLabelChange(0)}
-                sx={{ mt: 2 }}
-              >
-                Add Label
-              </Button>
-            )}
-          </Box>
-
-          {result?.ai_code_smell !== undefined && (
-            <Alert severity={result.ai_code_smell ? "warning" : "success"} sx={{ mt: 2 }}>
-              <strong>AI Code Smell Detection:</strong> {result.ai_code_smell ? "Potential code smell detected." : "No code smell detected."}
-              <br />
-              <strong>Confidence:</strong> {result.ai_confidence !== undefined ? (result.ai_confidence * 100).toFixed(1) + '%' : 'N/A'}
-              {result.ai_suggestions && result.ai_suggestions.length > 0 && (
-                <ul>
-                  {result.ai_suggestions.map((s, i) => <li key={i}>{s}</li>)}
-                </ul>
-              )}
-            </Alert>
-          )}
         </Box>
       )}
-    </Box>
+    </Container>
   );
 };
 
