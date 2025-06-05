@@ -41,6 +41,7 @@ import AnalysisPage from './components/AnalysisPage';
 import HomeIcon from '@mui/icons-material/Home';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import VisualizationsPage from './components/VisualizationsPage';
+import AwsDashboard from './components/AwsDashboard';
 import axios from 'axios';
 import API_URL from './config';
 
@@ -225,6 +226,7 @@ const App: React.FC = () => {
     { text: 'Analysis History', icon: <HistoryIcon />, page: 'history' },
     { text: 'Repository Analysis', icon: <GitHubIcon />, page: 'repository' },
     { text: 'Visualizations', icon: <BarChartIcon />, page: 'visualizations' },
+    { text: 'AWS Dashboard', icon: <AssessmentIcon />, page: 'aws-dashboard' },
   ];
 
   const drawer = (
@@ -282,6 +284,8 @@ const App: React.FC = () => {
         return <RepositoryAnalysis />;
       case 'visualizations':
         return <VisualizationsPage />;
+      case 'aws-dashboard':
+        return <AwsDashboard />;
       default:
         return <HomePage />;
     }

@@ -16,6 +16,7 @@ from .code_analyzer import CodeAnalyzer
 from .github import GitHubWebhook
 from .cache import cache
 from .ml_model import code_smell_detector
+from app.routers import aws_metrics
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -52,6 +53,8 @@ github_webhook_handler = GitHubWebhook(webhook_secret=webhook_secret)
 ADMIN_SECURITY_ANSWER = os.getenv("ADMIN_SECURITY_ANSWER", "mysecretanswer")
 ADMIN_UNIQUE_CODE = os.getenv("ADMIN_UNIQUE_CODE", "ADM1N-C0DE-2024")
 print(f"[DEBUG] ADMIN_SECURITY_ANSWER is: '{ADMIN_SECURITY_ANSWER}'")
+
+app.include_router(aws_metrics.router)
 
 @app.get("/")
 async def root():
