@@ -44,6 +44,21 @@ spec:
           value: "code_reviewer"
         - name: DB_PORT
           value: "5432"
+        - name: GITHUB_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: github-secret
+              key: GITHUB_CLIENT_ID
+        - name: GITHUB_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: github-secret
+              key: GITHUB_CLIENT_SECRET
+        - name: GITHUB_WEBHOOK_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: github-secret
+              key: GITHUB_WEBHOOK_SECRET
         resources:
           requests:
             memory: "256Mi"
