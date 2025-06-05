@@ -24,50 +24,18 @@ An automated code quality review service that analyzes code for quality, style i
 
 ## Screenshots
 
-![screenshot-1](https://github.com/user-attachments/assets/b6bb0149-1cf8-4f1b-8c2f-754e7153d4c8)
-
-![screenshot-2](https://github.com/user-attachments/assets/c291c780-e9d5-4f52-832c-f8a145fd8591)
-
-![screenshot-3](https://github.com/user-attachments/assets/920e7ce0-3962-45bb-8e1f-172fcb6c6218)
+![home-page](https://github.com/user-attachments/assets/ccc1d010-4212-4aee-90f2-dd4b941add62)
 
 
-![screenshot-4](https://github.com/user-attachments/assets/1a902e76-0033-4533-b123-885f97ead278)
-
-![screenshot-5](https://github.com/user-attachments/assets/e555ab92-64ba-4544-9013-1a62b7c63dca)
+![analysis-result](https://github.com/user-attachments/assets/e7a18da7-8f44-4bd5-9737-79ce3dc5c124)
 
 
-## Setup
+![code-visualizations](https://github.com/user-attachments/assets/13421645-ee87-4505-9db4-d8b0830377ed)
 
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/automated-code-quality-reviewer.git
-cd automated-code-quality-reviewer
-```
 
-2. Create a virtual environment and install dependencies:
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-```
+![repo-analysis](https://github.com/user-attachments/assets/5a4b7522-ad3b-44ef-ad49-8b78055c56e9)
 
-3. Set up environment variables:
-```bash
-cp .env.example .env
-# Edit .env with your configuration
-```
-
-4. Start the services:
-```bash
-# Start Redis (required for Celery)
-docker run -d -p 6379:6379 redis
-
-# Start the FastAPI application
-uvicorn app.main:app --reload
-
-# Start Celery worker
-celery -A app.worker worker --loglevel=info
-```
+![aws-resource-dashboard](https://github.com/user-attachments/assets/1532e83a-6272-4e6b-8ea2-e526ff519222)
 
 
 ### Main Endpoints
