@@ -14,6 +14,7 @@ import {
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import axios, { AxiosError } from 'axios';
+import API_URL from '../config';
 
 interface AnalysisResult {
   id: number;
@@ -66,7 +67,7 @@ const UserCodeAnalyzer: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.post('http://localhost:8000/analyze/user', { code });
+      const response = await axios.post(`${API_URL}/analyze/user`, { code });
       setResult(response.data);
     } catch (err) {
       const axiosError = err as AxiosError<ErrorResponse>;

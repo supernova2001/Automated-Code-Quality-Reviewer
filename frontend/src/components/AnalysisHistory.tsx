@@ -33,6 +33,7 @@ import {
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import axios from 'axios';
+import API_URL from '../config';
 
 interface Analysis {
   id: number;
@@ -100,7 +101,7 @@ const AnalysisHistory: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await axios.get('http://localhost:8000/analyses');
+        const response = await axios.get(`${API_URL}/analyses`);
         const unique = response.data.filter((analysis: Analysis, idx: number, self: Analysis[]) => {
           if (analysis.file_path && analysis.commit_sha) {
             return idx === self.findIndex(a => a.file_path === analysis.file_path && a.commit_sha === analysis.commit_sha);

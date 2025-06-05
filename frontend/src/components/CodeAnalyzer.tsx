@@ -26,6 +26,7 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import API_URL from '../config';
 
 interface AnalysisResult {
   id: number;
@@ -81,7 +82,7 @@ const CodeAnalyzer: React.FC = () => {
       setLoading(true);
       setError(null);
       setSuccessMessage(null);
-      const response = await axios.post('http://localhost:8000/analyze', { code });
+      const response = await axios.post(`${API_URL}/analyze`, { code });
       setResult(response.data);
     } catch (err) {
       const axiosError = err as AxiosError<ErrorResponse>;
@@ -107,7 +108,7 @@ const CodeAnalyzer: React.FC = () => {
   const handleLabelChange = async (newLabel: number) => {
     if (!result) return;
     try {
-      await axios.patch(`http://localhost:8000/analyses/${result.id}/label`, { label: newLabel });
+      await axios.patch(`${API_URL}/analyses/${result.id}/label`, { label: newLabel });
       setLabel(newLabel);
       setSuccessMessage('Label added successfully!');
       // Clear the form after successful label update

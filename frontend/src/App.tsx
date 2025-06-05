@@ -42,6 +42,7 @@ import HomeIcon from '@mui/icons-material/Home';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import VisualizationsPage from './components/VisualizationsPage';
 import axios from 'axios';
+import API_URL from './config';
 
 const theme = createTheme({
   palette: {
@@ -189,7 +190,7 @@ const App: React.FC = () => {
 
   const handleSecuritySubmit = async () => {
     try {
-      const res = await axios.post(`http://localhost:8000/api/admin/auth`, { answer: securityAnswer });
+      const res = await axios.post(`${API_URL}/api/admin/auth`, { answer: securityAnswer });
       setReceivedCode(res.data.code);
       setShowCode(true);
     } catch (err) {
@@ -199,7 +200,7 @@ const App: React.FC = () => {
 
   const handleCodeSubmit = async () => {
     try {
-      const res = await axios.post('http://localhost:8000/api/admin/verify', { code: codeInput });
+      const res = await axios.post(`${API_URL}/api/admin/verify`, { code: codeInput });
       if (res.data.admin) {
         setAdminUnlocked(true);
         sessionStorage.setItem('isAdmin', 'true');

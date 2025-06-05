@@ -34,6 +34,7 @@ import {
   Link as LinkIcon,
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
+import API_URL from '../config';
 
 interface RepositoryAnalysis {
   id: number;
@@ -90,7 +91,7 @@ const RepositoryAnalysis: React.FC = () => {
         throw new Error('Invalid GitHub repository URL');
       }
 
-      const response = await fetch(`http://localhost:8000/analyses?repository=${repoName}`);
+      const response = await fetch(`${API_URL}/analyses?repository=${repoName}`);
       if (!response.ok) {
         throw new Error('Failed to fetch analysis results');
       }

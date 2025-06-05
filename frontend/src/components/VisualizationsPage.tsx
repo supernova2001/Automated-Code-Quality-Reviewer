@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography, Paper, Grid, CircularProgress, Alert } from '@mui/material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Legend, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
+import API_URL from '../config';
 
 const COLORS = ['#2563eb', '#7c3aed', '#10b981', '#f59e42', '#ef4444'];
 
@@ -10,7 +11,7 @@ const VisualizationsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('http://localhost:8000/analytics') // Use full backend URL
+    fetch(`${API_URL}/analytics`)
       .then(async res => {
         if (!res.ok) throw new Error('Failed to fetch analytics');
         try {
