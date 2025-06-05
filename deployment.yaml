@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: code-reviewer-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: code-reviewer-app
+  template:
+    metadata:
+      labels:
+        app: code-reviewer-app
+    spec:
+      containers:
+      - name: code-reviewer-app
+        image: jkashig/repo:tag
+        ports:
+        - containerPort: 8000
+        env:
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: openai-secret
+              key: api-key
+        - name: USE_AWS_RDS
+          value: "true"
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key: host
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key: username
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key: password
+        - name: DB_NAME
+          value: "code_reviewer"
+        - name: DB_PORT
+          value: "5432"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "200m" 

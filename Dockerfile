@@ -1,26 +1,28 @@
-FROM python:3.9-slim
+FROM python:3.9
 
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    git \
-    && rm -rf /var/lib/apt/lists/*
+# Install only git
+RUN apt-get update && \
+    apt-get install -y git && \
+    rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first to leverage Docker cache
+# Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY . .
+COPY app/ ./app/
+COPY alembic.ini .
+COPY migrations/ ./migrations/
 
 # Create necessary directories
 RUN mkdir -p /app/data
 
 # Set environment variables
-ENV PYTHONPATH=/app
-ENV DATABASE_URL=sqlite:///./data/code_analysis.db
-ENV REDIS_URL=redis://redis:6379/0
+ENV PYTHONPATH=/app \
+    DATABASE_URL=sqlite:///./data/code_analysis.db \
+    REDIS_URL=redis://redis:6379/0
 
 # Expose port
 EXPOSE 8000

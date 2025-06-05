@@ -8,8 +8,7 @@ import re
 from .schemas import Issue, AnalysisMetrics
 from .cache import cache, cached
 import hashlib
-from transformers import AutoTokenizer, AutoModel
-import torch
+# import transformers  # Commented out as not needed
 import joblib
 import openai
 
@@ -26,7 +25,7 @@ class CodeAnalyzer:
             'bandit': self._run_bandit
         }
         self.cache_ttl = 3600  # Cache results for 1 hour
-        # ML model and tokenizer (temporarily disabled)
+        # ML model and tokenizer (disabled)
         # self.ml_tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
         # self.ml_model = AutoModel.from_pretrained("microsoft/codebert-base")
         # self.smell_clf = joblib.load("code_smell_classifier.pkl")
@@ -57,7 +56,7 @@ class CodeAnalyzer:
             f"- Complexity score: {metrics['complexity_score']}\n"
             f"- Pylint score: {metrics['pylint_score']}\n"
             f"Suggest 3 actionable tips to improve code quality. "
-            f"{'Here is the code:\n' + code if code else ''}"
+            f"Here is the code:\n" + code if code else ""
         )
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",

@@ -21,4 +21,6 @@ esprima==4.0.1
 httpx==0.25.1
 radon==6.0.1
 scikit-learn==1.3.2
-joblib==1.3.2 
+joblib==1.3.2
+# transformers  # Removed as not needed for current functionality
+openai 
